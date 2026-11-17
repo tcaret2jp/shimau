@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="welcome.css">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="install-view">
   <div class="hero">
     <div class="logo big" data-icon="route"></div>
     <h1>shimau へようこそ</h1>
@@ -52,14 +52,113 @@
         <h3>最初のルールを作る</h3>
         <p>「このサイトのダウンロードは、このフォルダへ」を登録します。保存先の選択から始められます。</p>
         <div class="actions" id="s3act" hidden>
-          <a class="btn primary" href="../options/options.html#new-rule">ルールを作る<span data-icon="arrow"></span></a>
-          <a class="btn text" href="../options/options.html#backup">バックアップから読み込む</a>
+          <button class="btn primary" id="to-tour">はじめる<span data-icon="arrow"></span></button>
         </div>
       </div>
     </li>
   </ol>
 
   <div class="foot">あとで設定する場合は、このタブを閉じてください。設定画面の「ヘルパー」からいつでも再開できます。</div>
+</div>
+
+<div class="stage" id="tour" hidden>
+  <div class="top"><div class="logo" data-icon="route"></div><b>shimau</b><div class="progress" id="progress"></div></div>
+
+  <div class="carousel" id="car" aria-roledescription="カルーセル">
+    <div class="track" id="track">
+
+      <section class="slide" data-s="choose" aria-roledescription="スライド">
+        <div class="eyebrow">ヘルパーとつながりました</div>
+        <h2>shimau を使うのは初めてですか？</h2>
+        <p class="lead">もう一方の PC で使っているなら、バックアップを読み込むだけで設定が終わります。</p>
+        <div class="grow choices">
+          <button class="choice" data-next><span class="cic-lg accent" data-icon="spark"></span>
+            <span class="ct"><b>初めて使う</b><span>使い方を見ながら、最初の保存先とルールを作ります（1 分）</span></span><span class="chev" data-icon="chev"></span></button>
+          <button class="choice" id="import"><span class="cic-lg" data-icon="upload"></span>
+            <span class="ct"><b>バックアップを読み込む</b><span>書き出した JSON ファイルを選ぶと、そのまま使い始められます</span></span><span class="chev" data-icon="chev"></span></button>
+          <a class="choice" id="has-config" href="../options/options.html" hidden><span class="cic-lg" data-icon="list"></span>
+            <span class="ct"><b>設定を開く</b><span id="has-config-text">すでにルールがあります</span></span><span class="chev" data-icon="chev"></span></a>
+          <input type="file" id="file" accept=".json,application/json" hidden>
+          <div class="err" id="import-err"></div>
+        </div>
+      </section>
+
+      <section class="slide" data-s="how" aria-roledescription="スライド">
+        <div class="eyebrow">使い方 1 / 4</div>
+        <h2>「保存先」と「ルール」の 2 つだけ</h2>
+        <p class="lead">登録したサイトのダウンロードだけを、決めたフォルダへ自動でしまいます。</p>
+        <div class="grow">
+          <div class="flow">
+            <div class="node"><div class="k">サイト</div><div class="v">univ.ac.jp</div></div>
+            <span class="arrow" data-icon="arrow"></span>
+            <div class="node rule"><div class="k">ルール</div><div class="v">この組み合わせ</div></div>
+            <span class="arrow" data-icon="arrow"></span>
+            <div class="node"><div class="k">保存先</div><div class="v">大学資料</div></div>
+          </div>
+          <div class="defs">
+            <div class="def"><span class="ic drive" data-icon="folder"></span><div><b>保存先 ＝ しまう場所</b><span>Googleドライブ・Dropbox・外付け SSD などのフォルダに名前を付けたもの</span></div></div>
+            <div class="def"><span class="ic" style="background:var(--accent)" data-icon="route"></span><div><b>ルール ＝ どのサイトを、どこへ</b><span>「このサイトのダウンロードは、この保存先へ」という決まり。登録していないサイトは今までどおり</span></div></div>
+          </div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next>保存先を作る<span data-icon="arrow"></span></button></div>
+      </section>
+
+      <section class="slide" data-s="dest" aria-roledescription="スライド">
+        <div class="eyebrow">使い方 2 / 4</div>
+        <h2>まず、しまう場所を決めます</h2>
+        <p class="lead">よく使うフォルダを 1 つ選んで、分かりやすい名前を付けてください。</p>
+        <div class="grow">
+          <div class="field"><label for="d-path">フォルダ</label>
+            <div class="with-btn"><input class="input mono" id="d-path" autocomplete="off"><button class="btn ghost" id="d-pick"><span data-icon="folder"></span>選ぶ</button></div>
+            <div class="hint" id="d-hint"></div>
+            <div class="chips" id="d-vols"></div></div>
+          <div class="field"><label for="d-name">名前</label><input class="input" id="d-name" maxlength="60" placeholder="例：大学資料" autocomplete="off"><div class="hint">フォルダを選ぶと自動で入ります。あとで変えられます</div></div>
+          <div class="err" id="d-err"></div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" id="d-next" disabled>次へ<span data-icon="arrow"></span></button></div>
+      </section>
+
+      <section class="slide" data-s="rule" aria-roledescription="スライド">
+        <div class="eyebrow">使い方 3 / 4</div>
+        <h2>どのサイトのダウンロードを入れますか？</h2>
+        <p class="lead">サイトのアドレスを入れてください。URL をそのまま貼り付けても大丈夫です。</p>
+        <div class="grow">
+          <div class="field"><label for="r-dom">サイト</label><input class="input" id="r-dom" placeholder="例：univ.ac.jp" autocomplete="off"><div class="hint">サブドメイン（lms.univ.ac.jp など）も対象になります</div></div>
+          <div class="preview"><span class="tag" id="p-site"></span><span>のダウンロード</span><span class="parrow" data-icon="arrow"></span><span class="tag" id="p-dest"></span><span>にしまう</span></div>
+          <div class="err" id="r-err"></div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" id="r-next" disabled>ルールを作る<span data-icon="arrow"></span></button></div>
+      </section>
+
+      <section class="slide" data-s="brave" aria-roledescription="スライド">
+        <div class="eyebrow">使い方 4 / 4</div>
+        <h2>Brave の設定を 1 つだけ確認</h2>
+        <p class="lead">Brave の「保存場所を確認する」が ON だと、毎回「どこに保存しますか？」が出て、振り分けの前に止まってしまいます。</p>
+        <div class="grow">
+          <div class="setting"><div class="tx">ダウンロード前に各ファイルの保存場所を確認する</div><span class="toggle" role="img" aria-label="OFF" aria-checked="false"></span></div>
+          <p class="say">↑ この項目を <b>OFF</b> にしてください。</p>
+          <button class="btn ghost" id="open-settings"><span data-icon="open"></span>Brave のダウンロード設定を開く</button>
+          <div class="mini"><span data-icon="check"></span>すでに OFF なら、そのまま「次へ」で大丈夫です</div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next>次へ<span data-icon="arrow"></span></button></div>
+      </section>
+
+      <section class="slide" data-s="done" aria-roledescription="スライド">
+        <div class="grow center">
+          <div class="done-ill" data-icon="check"></div>
+          <h2>準備ができました</h2>
+          <p class="lead" id="done-lead"></p>
+          <div class="tips">
+            <div><span data-icon="spark"></span>ほかのサイトは、そのページで右上の shimau アイコンを押すと 1 クリックで追加できます</div>
+            <div><span data-icon="list"></span>ルールと保存先は「設定」でまとめて編集できます</div>
+            <div><span data-icon="box"></span>もう一方の PC では「バックアップ」で書き出したファイルを読み込むだけです</div>
+          </div>
+        </div>
+        <div class="nav"><a class="btn ghost" href="../options/options.html">設定を開く</a><span class="sp"></span><button class="btn primary" id="close">閉じる</button></div>
+      </section>
+    </div>
+  </div>
+  <div class="dots" id="dots" role="tablist" aria-label="スライド"></div>
 </div>
 <script type="module" src="welcome.js"></script>
 </body>

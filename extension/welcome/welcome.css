@@ -32,3 +32,86 @@ h1{font-size:24px;margin:0 0 6px;letter-spacing:.01em}
 .status.ok svg{width:16px;height:16px}
 .foot{text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-3)}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* ---------- チュートリアル（カルーセル） ---------- */
+.stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:36px 0 40px;overflow:hidden}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.top .logo{width:34px;height:34px;border-radius:10px}
+.top .logo svg{width:19px;height:19px}
+.top b{font-size:16px}
+.progress{display:flex;gap:6px;margin-left:14px}
+.progress i{width:26px;height:4px;border-radius:2px;background:var(--border);transition:background .3s}
+.progress i.on{background:var(--accent)}
+.carousel{width:100%;overflow:hidden;padding:8px 0 44px;margin-bottom:-26px;touch-action:pan-y}
+.track{display:flex;gap:24px;transition:transform .45s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.slide{flex:0 0 min(560px,calc(100vw - 64px));background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:30px 32px 26px;opacity:.35;transform:scale(.94);transition:opacity .45s,transform .45s;min-height:450px;display:flex;flex-direction:column}
+.slide.cur{opacity:1;transform:none}
+.slide:not(.cur){pointer-events:none}
+.eyebrow{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:6px}
+.slide h2{font-size:21px;margin:0 0 6px}
+.slide .lead{margin:0 0 18px;font-size:13.5px}
+.slide .grow{flex:1}
+.nav{display:flex;align-items:center;gap:10px;margin-top:20px}
+.nav .sp{flex:1}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:4px}
+.dots button{width:8px;height:8px;border-radius:50%;border:0;background:var(--border);padding:0;transition:width .3s,background .3s}
+.dots button.on{background:var(--accent);width:22px;border-radius:4px}
+.btn.text.plain{color:var(--text-2)}
+.choices{display:grid;gap:12px;align-content:start}
+.choice{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:16px;transition:border-color .2s,background .2s;text-decoration:none;color:inherit}
+.choice:hover{border-color:var(--accent);background:var(--accent-soft)}
+.cic-lg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--surface-2);color:var(--text-2)}
+.cic-lg.accent{background:var(--accent-soft);color:var(--accent)}
+.cic-lg svg{width:21px;height:21px}
+.choice .ct b{display:block;font-size:14.5px}
+.choice .ct span{color:var(--text-2);font-size:12.5px}
+.choice .chev{margin-left:auto;color:var(--text-3)}
+.choice .chev svg{width:16px;height:16px}
+.flow{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 18px;flex-wrap:wrap}
+.node{border:1px solid var(--border);border-radius:14px;padding:12px 14px;text-align:center;min-width:118px;background:var(--surface)}
+.node .k{font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:.04em}
+.node .v{font-weight:700;margin-top:2px}
+.node.rule{border-color:var(--accent);background:var(--accent-soft)}
+.node.rule .k{color:var(--accent)}
+.flow .arrow{color:var(--text-3)}
+.flow .arrow svg{width:22px;height:22px}
+.defs{display:grid;gap:10px}
+.def{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface-2)}
+.def .ic{width:30px;height:30px;border-radius:9px}
+.def .ic svg{width:16px;height:16px}
+.def b{display:block}
+.def span{color:var(--text-2);font-size:12.5px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:650;margin-bottom:6px}
+.input{width:100%;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 12px;outline:none;color:var(--text)}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+.with-btn{display:flex;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips:empty{display:none}
+.chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;display:inline-flex;gap:6px;align-items:center}
+.chips button:hover{border-color:var(--accent)}
+.chips .ic{width:20px;height:20px;border-radius:50%}
+.chips .ic svg{width:11px;height:11px}
+.preview{margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px}
+.preview .parrow svg{width:16px;height:16px;color:var(--text-3)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--surface);font-weight:600;font-size:12.5px;max-width:100%}
+.tag .fav{width:20px;height:20px;border-radius:6px;font-size:11px}
+.tag .fav img{width:14px;height:14px}
+.tag .ic{width:20px;height:20px;border-radius:50%}
+.tag .ic svg{width:11px;height:11px}
+.err{color:var(--ng);font-size:12.5px;min-height:1em;margin-top:6px}
+.setting{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:6px 0 10px}
+.setting .tx{flex:1;font-size:13px}
+.setting .toggle{pointer-events:none}
+.say{margin:0 0 12px;font-size:13px}
+.mini{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2);margin-top:12px}
+.mini svg{width:14px;height:14px}
+.done-ill{width:72px;height:72px;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok);display:grid;place-items:center;margin:6px auto 14px}
+.done-ill svg{width:36px;height:36px}
+.center{text-align:center}
+.tips{display:grid;gap:8px;margin-top:16px;text-align:left}
+.tips div{display:flex;gap:10px;font-size:12.5px;color:var(--text-2);align-items:flex-start}
+.tips svg{width:15px;height:15px;color:var(--accent);flex:none;margin-top:2px}
+@media (prefers-reduced-motion:reduce){.track,.slide{transition:none}}
+a.btn.ghost{color:var(--text)}

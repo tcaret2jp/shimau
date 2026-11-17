@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shimau はじめての設定 v2（モック）</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f5f7; --surface:#ffffff; --surface-2:#f2f2f5; --hover:#eaeaee;
+  --border:#e2e2e7; --text:#1d1d1f; --text-2:#6e6e73; --text-3:#9a9aa0;
+  --accent:#f0532b; --accent-hover:#d9461f; --accent-soft:rgba(240,83,43,.11);
+  --ok:#2fb350; --ng:#e5483d; --warn:#e8930c;
+  --drive:#1f9d55; --dropbox:#2f6fe4; --ssd:#7a7a82; --local:#c9762a;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 12px 36px rgba(0,0,0,.10);
+  --r:16px;
+}
+:root[data-theme="dark"]{
+  --bg:#161618; --surface:#1f1f22; --surface-2:#28282c; --hover:#2f2f34;
+  --border:#34343a; --text:#f2f2f5; --text-2:#a3a3aa; --text-3:#74747b;
+  --accent:#ff6a3d; --accent-hover:#ff825c; --accent-soft:rgba(255,106,61,.15);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 36px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans","Yu Gothic UI","Segoe UI",Meiryo,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+svg{display:block}
+
+.mockbar{position:sticky;top:0;z-index:9;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 16px;background:#2b2b30;color:#ddd;font-size:12px}
+.mockbar b{color:#fff;margin-right:4px}
+.mseg{display:inline-flex;background:rgba(255,255,255,.1);border-radius:8px;padding:2px}
+.mseg button{border:0;background:none;padding:3px 10px;border-radius:6px;font-size:12px;color:#ccc}
+.mseg button.on{background:#fff;color:#111}
+
+.stage{min-height:calc(100vh - 44px);display:flex;flex-direction:column;align-items:center;padding:36px 16px 48px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:#fff}
+.logo svg{width:19px;height:19px}
+.top b{font-size:16px}
+.progress{display:flex;gap:6px;margin-left:14px}
+.progress i{width:26px;height:4px;border-radius:2px;background:var(--border)}
+.progress i.on{background:var(--accent)}
+
+/* カルーセル */
+.carousel{position:relative;width:100%;max-width:980px;overflow:hidden;padding:8px 0 18px}
+.track{display:flex;gap:24px;transition:transform .45s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.slide{flex:0 0 min(560px,calc(100% - 64px));background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:30px 32px 26px;opacity:.35;transform:scale(.94);transition:opacity .45s,transform .45s;min-height:440px;display:flex;flex-direction:column}
+.slide.cur{opacity:1;transform:none}
+.slide:not(.cur){pointer-events:none}
+.eyebrow{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:6px}
+.slide h2{font-size:21px;margin:0 0 6px}
+.slide .lead{color:var(--text-2);margin:0 0 18px;font-size:13.5px}
+.slide .grow{flex:1}
+.nav{display:flex;align-items:center;gap:10px;margin-top:20px}
+.nav .sp{flex:1}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:4px}
+.dots button{width:8px;height:8px;border-radius:50%;border:0;background:var(--border);padding:0}
+.dots button.on{background:var(--accent);width:22px;border-radius:4px;transition:width .3s}
+
+.btn{white-space:nowrap;border:0;border-radius:10px;padding:9px 16px;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:7px;justify-content:center;text-decoration:none;transition:background .2s}
+.btn svg{width:16px;height:16px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.primary:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.ghost:hover{background:var(--hover)}
+.btn.text{background:none;color:var(--text-2);padding:9px 6px}
+.btn.big{padding:12px 20px;font-size:14.5px;border-radius:12px}
+
+/* インストール手順 */
+.osteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.osteps li{display:flex;gap:12px}
+.osteps .n{width:24px;height:24px;border-radius:50%;background:var(--surface-2);color:var(--text-2);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none;margin-top:1px}
+.osteps p{margin:0}
+.osteps small{display:block;color:var(--text-3);font-size:12px;margin-top:2px}
+.warnbox{margin-top:6px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface-2);font-size:12.5px}
+.warnbox .t{font-weight:700;margin-bottom:4px;display:flex;gap:6px;align-items:center}
+.warnbox .t svg{width:15px;height:15px;color:var(--warn)}
+.fake{display:inline-block;padding:1px 7px;border-radius:6px;background:var(--surface);border:1px solid var(--border);font-size:12px;font-weight:600}
+.status{display:flex;align-items:center;gap:10px;margin-top:18px;padding:11px 13px;border-radius:12px;background:var(--surface-2);font-size:13px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status.ok{background:color-mix(in srgb,var(--ok) 13%,var(--surface));color:color-mix(in srgb,var(--ok) 70%,var(--text))}
+.status svg{width:16px;height:16px}
+
+/* 分かれ道 */
+.choices{display:grid;gap:12px;margin-top:4px}
+.choice{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:16px;transition:border-color .2s,background .2s}
+.choice:hover{border-color:var(--accent);background:var(--accent-soft)}
+.choice .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none}
+.choice .ic svg{width:21px;height:21px}
+.choice b{display:block;font-size:14.5px}
+.choice span{color:var(--text-2);font-size:12.5px}
+.choice .chev{margin-left:auto;color:var(--text-3)}
+
+/* 図解 */
+.flow{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 18px}
+.node{border:1px solid var(--border);border-radius:14px;padding:12px 14px;text-align:center;min-width:120px;background:var(--surface)}
+.node .k{font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:.04em}
+.node .v{font-weight:700;margin-top:2px}
+.node.rule{border-color:var(--accent);background:var(--accent-soft)}
+.node.rule .k{color:var(--accent)}
+.arrow{color:var(--text-3)}
+.arrow svg{width:22px;height:22px}
+.defs{display:grid;gap:10px}
+.def{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface-2)}
+.def .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none}
+.def .ic svg{width:16px;height:16px}
+.def b{display:block}
+.def span{color:var(--text-2);font-size:12.5px}
+
+/* フォーム */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:650;margin-bottom:6px}
+.input{width:100%;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:9px 12px;outline:none}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+.with-btn{display:flex;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;display:inline-flex;gap:6px;align-items:center}
+.chips button:hover{border-color:var(--accent)}
+.cic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;color:#fff}
+.cic svg{width:11px;height:11px}
+.hint{font-size:12px;color:var(--text-3);margin-top:5px}
+.preview{margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px}
+.preview svg{width:16px;height:16px;color:var(--text-3)}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--surface);font-weight:600;font-size:12.5px}
+.tag .fav{width:20px;height:20px;border-radius:6px;background:#4b7bec;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800}
+
+.setting{display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:6px 0 12px}
+.setting .tx{flex:1;font-size:13px}
+.toggle{width:38px;height:22px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.toggle.off{background:var(--border)}
+.toggle.off::after{left:2px}
+.mini{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+.mini svg{width:14px;height:14px}
+
+.done-ill{width:72px;height:72px;border-radius:50%;background:color-mix(in srgb,var(--ok) 14%,var(--surface));color:var(--ok);display:grid;place-items:center;margin:6px auto 14px}
+.done-ill svg{width:36px;height:36px}
+.center{text-align:center}
+.tips{display:grid;gap:8px;margin-top:16px;text-align:left}
+.tips div{display:flex;gap:10px;font-size:12.5px;color:var(--text-2);align-items:flex-start}
+.tips svg{width:15px;height:15px;color:var(--accent);flex:none;margin-top:2px}
+
+.note{max-width:760px;margin:10px auto 40px;padding:14px 16px;border:1px dashed var(--border);border-radius:12px;font-size:12.5px;color:var(--text-2)}
+.note h4{margin:0 0 6px;font-size:13px;color:var(--text)}
+.note ul{margin:0;padding-left:18px}
+@media (prefers-reduced-motion:reduce){.track,.slide{transition:none}.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <span><b>OS</b><span class="mseg" data-k="os"><button class="on" data-v="mac">Mac</button><button data-v="win">Windows</button></span></span>
+  <span><b>ヘルパー</b><span class="mseg" data-k="helper"><button class="on" data-v="wait">未接続</button><button data-v="ok">接続できた</button></span></span>
+  <span><b>テーマ</b><span class="mseg" data-k="theme"><button class="on" data-v="light">ライト</button><button data-v="dark">ダーク</button></span></span>
+  <span style="opacity:.7">← → キーでも移動できます</span>
+</div>
+
+<div class="stage">
+  <div class="top"><div class="logo" data-i="route"></div><b>shimau</b><div class="progress" id="progress"></div></div>
+
+  <div class="carousel" id="car">
+    <div class="track" id="track">
+
+      <!-- 1. ヘルパーを入れる -->
+      <section class="slide" data-s="install">
+        <div class="eyebrow">ステップ 1 / ヘルパー</div>
+        <h2>ヘルパーを入れましょう</h2>
+        <p class="lead">ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。コマンドの入力も不要です。</p>
+        <div class="grow">
+          <ol class="osteps">
+            <li><span class="n">1</span><div><p>下のボタンでダウンロード</p>
+              <div style="margin-top:8px"><a class="btn primary" href="#"><span data-i="download"></span><span data-os="mac">Mac 用をダウンロード</span><span data-os="win">Windows 用をダウンロード</span></a></div></div></li>
+            <li data-os="mac"><span class="n">2</span><div><p>ダウンロードした <b>shimau-helper.zip</b> をダブルクリック → 出てきた <b>shimau-helper</b> をダブルクリック</p>
+              <small>Brave のダウンロード一覧（右上の ↓）から開けます</small></div></li>
+            <li data-os="win"><span class="n">2</span><div><p>ダウンロードした <b>shimau-helper.exe</b> をダブルクリック</p>
+              <small>Brave のダウンロード一覧（右上の ↓）から開けます</small></div></li>
+            <li><span class="n">3</span><div><p>「インストールしました」と出たら完了です</p>
+              <div class="warnbox" data-os="mac"><div class="t"><span data-i="alert"></span>初回だけ「開けません」と出たら</div>
+                <span class="fake">システム設定</span> → <span class="fake">プライバシーとセキュリティ</span> → 下の方の <span class="fake">このまま開く</span> を押して、もう一度ダブルクリックしてください。</div>
+              <div class="warnbox" data-os="win"><div class="t"><span data-i="alert"></span>「Windows によって PC が保護されました」と出たら</div>
+                <span class="fake">詳細情報</span> → <span class="fake">実行</span> を押してください。</div></div></li>
+          </ol>
+          <div class="status" id="wait"><div class="spin"></div><span>インストールを待っています… 終わると自動で次へ進みます</span></div>
+          <div class="status ok" id="okmsg"><span data-i="check"></span><span>ヘルパーとつながりました（v0.2.0）</span></div>
+        </div>
+        <div class="nav"><span class="sp"></span><button class="btn primary" data-next id="installNext" disabled>次へ<span data-i="arrow"></span></button></div>
+      </section>
+
+      <!-- 2. 分かれ道 -->
+      <section class="slide" data-s="choose">
+        <div class="eyebrow">ステップ 2</div>
+        <h2>shimau を使うのは初めてですか？</h2>
+        <p class="lead">もう一方の PC で使っているなら、バックアップを読み込むだけで設定が終わります。</p>
+        <div class="grow choices">
+          <button class="choice" data-next><span class="ic" style="background:var(--accent-soft);color:var(--accent)" data-i="spark"></span>
+            <div><b>初めて使う</b><span>使い方を見ながら、最初の保存先とルールを作ります（1 分）</span></div><span class="chev" data-i="chev"></span></button>
+          <button class="choice" id="importBtn"><span class="ic" style="background:var(--surface-2);color:var(--text-2)" data-i="upload"></span>
+            <div><b>バックアップを読み込む</b><span>書き出した JSON ファイルを選ぶと、そのまま使い始められます</span></div><span class="chev" data-i="chev"></span></button>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span></div>
+      </section>
+
+      <!-- 3. しくみ -->
+      <section class="slide" data-s="how">
+        <div class="eyebrow">使い方 1 / 4</div>
+        <h2>「保存先」と「ルール」の 2 つだけ</h2>
+        <p class="lead">登録したサイトのダウンロードだけを、決めたフォルダへ自動でしまいます。</p>
+        <div class="grow">
+          <div class="flow">
+            <div class="node"><div class="k">サイト</div><div class="v">univ.ac.jp</div></div>
+            <span class="arrow" data-i="arrow"></span>
+            <div class="node rule"><div class="k">ルール</div><div class="v">この組み合わせ</div></div>
+            <span class="arrow" data-i="arrow"></span>
+            <div class="node"><div class="k">保存先</div><div class="v">大学資料</div></div>
+          </div>
+          <div class="defs">
+            <div class="def"><span class="ic" style="background:var(--drive)" data-i="folder"></span><div><b>保存先 ＝ しまう場所</b><span>Googleドライブ・Dropbox・外付け SSD などのフォルダに名前を付けたもの</span></div></div>
+            <div class="def"><span class="ic" style="background:var(--accent)" data-i="route"></span><div><b>ルール ＝ どのサイトを、どこへ</b><span>「このサイトのダウンロードは、この保存先へ」という決まり。登録していないサイトは今までどおり</span></div></div>
+          </div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next>保存先を作る<span data-i="arrow"></span></button></div>
+      </section>
+
+      <!-- 4. 保存先を作る -->
+      <section class="slide" data-s="dest">
+        <div class="eyebrow">使い方 2 / 4</div>
+        <h2>まず、しまう場所を決めます</h2>
+        <p class="lead">よく使うフォルダを 1 つ選んで、分かりやすい名前を付けてください。</p>
+        <div class="grow">
+          <div class="field"><label>フォルダ</label>
+            <div class="with-btn"><input class="input mono" id="dPath" placeholder="/Users/…/マイドライブ/大学"><button class="btn ghost" id="pick"><span data-i="folder"></span>選ぶ</button></div>
+            <div class="chips"><span class="hint" style="width:100%;margin:0 0 2px">マウント中の場所から選ぶ</span>
+              <button data-path="/Users/toya/Library/CloudStorage/GoogleDrive-x/マイドライブ"><span class="cic" style="background:var(--drive)" data-i="drive"></span>Googleドライブ</button>
+              <button data-path="/Volumes/SSD"><span class="cic" style="background:var(--ssd)" data-i="ssd"></span>SSD</button>
+              <button data-path="/Users/toya/Dropbox"><span class="cic" style="background:var(--dropbox)" data-i="dropbox"></span>Dropbox</button></div></div>
+          <div class="field"><label>名前</label><input class="input" id="dName" placeholder="例：大学資料"><div class="hint">フォルダを選ぶと自動で入ります。あとで変えられます</div></div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next id="destNext" disabled>次へ<span data-i="arrow"></span></button></div>
+      </section>
+
+      <!-- 5. ルールを作る -->
+      <section class="slide" data-s="rule">
+        <div class="eyebrow">使い方 3 / 4</div>
+        <h2>どのサイトのダウンロードを入れますか？</h2>
+        <p class="lead">サイトのアドレスを入れてください。URL をそのまま貼り付けても大丈夫です。</p>
+        <div class="grow">
+          <div class="field"><label>サイト</label><input class="input" id="rDom" placeholder="例：univ.ac.jp"><div class="hint">サブドメイン（lms.univ.ac.jp など）も対象になります</div></div>
+          <div class="preview" id="rPrev"><span class="tag"><span class="fav" id="pFav">?</span><span id="pDom">サイト</span></span><span>のダウンロード</span><span data-i="arrow"></span>
+            <span class="tag"><span class="cic" style="background:var(--drive)" data-i="drive"></span><span id="pDest">保存先</span></span><span>にしまう</span></div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next id="ruleNext" disabled>ルールを作る<span data-i="arrow"></span></button></div>
+      </section>
+
+      <!-- 6. Brave の設定 -->
+      <section class="slide" data-s="brave">
+        <div class="eyebrow">使い方 4 / 4</div>
+        <h2>Brave の設定を 1 つだけ確認</h2>
+        <p class="lead">Brave の「保存場所を確認する」が ON だと、毎回「どこに保存しますか？」が出て、振り分けの前に止まってしまいます。</p>
+        <div class="grow">
+          <div class="setting"><div class="tx">ダウンロード前に各ファイルの保存場所を確認する</div><span class="toggle off"></span></div>
+          <p style="margin:0 0 12px;font-size:13px">↑ この項目を <b>OFF</b> にしてください。</p>
+          <a class="btn ghost" href="#"><span data-i="open"></span>Brave のダウンロード設定を開く</a>
+          <div class="mini" style="margin-top:12px"><span data-i="check"></span>すでに OFF なら、そのまま「次へ」で大丈夫です</div>
+        </div>
+        <div class="nav"><button class="btn text" data-prev>戻る</button><span class="sp"></span><button class="btn primary" data-next>次へ<span data-i="arrow"></span></button></div>
+      </section>
+
+      <!-- 7. 完了 -->
+      <section class="slide" data-s="done">
+        <div class="grow center">
+          <div class="done-ill" data-i="check"></div>
+          <h2>準備ができました</h2>
+          <p class="lead" id="doneLead">これからは <b>univ.ac.jp</b> のダウンロードが <b>大学資料</b> に自動でしまわれます。</p>
+          <div class="tips">
+            <div><span data-i="spark"></span>ほかのサイトは、そのページで右上の shimau アイコンを押すと 1 クリックで追加できます</div>
+            <div><span data-i="list"></span>ルールと保存先は「設定」でまとめて編集できます</div>
+            <div><span data-i="box"></span>もう一方の PC では「バックアップ」で書き出したファイルを読み込むだけです</div>
+          </div>
+        </div>
+        <div class="nav"><button class="btn ghost" id="toOptions">設定を開く</button><span class="sp"></span><button class="btn primary">閉じる</button></div>
+      </section>
+    </div>
+  </div>
+  <div class="dots" id="dots"></div>
+</div>
+
+<div class="note">
+  <h4>動きの説明（モック用メモ）</h4>
+  <ul>
+    <li>カードは中央に 1 枚、前後のカードが左右に薄く見えるカルーセル。「次へ」「戻る」・← → キー・トラックパッドの横スワイプで移動。</li>
+    <li><b>ヘルパー</b>：zip / exe をダブルクリックするだけで、自分自身をインストールする（コマンド不要）。署名していないアプリのため、初回だけ Mac / Windows の確認画面が出る（これを無くすには Apple・Microsoft の有料の開発者署名が必要）。</li>
+    <li>ヘルパーが既に入っていれば、ステップ 1 は飛ばして分かれ道から始まる。</li>
+    <li><b>バックアップを読み込む</b>：その場でファイルを選んで取り込み、完了カードへ（使い方の説明は飛ばす）。</li>
+    <li><b>保存先・ルール</b>：このカード上で実際に作る。「選ぶ」はヘルパーのフォルダ選択ダイアログ、マウント中の場所は自動で候補表示。</li>
+    <li>保存先・ルールがすでにある場合（2 回目以降に開いたとき）は、分かれ道に「設定を開く」を出す。</li>
+  </ul>
+</div>
+
+<script>
+const I={route:'<path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/>',download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',upload:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',chev:'<path d="M9 6l6 6-6 6"/>',alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',drive:'<path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/>',dropbox:'<path d="M7 3l5 3.2-5 3.3L2 6.2zM17 3l5 3.2-5 3.3-5-3.3zM2 12.8l5-3.3 5 3.3-5 3.2zM17 9.5l5 3.3-5 3.2-5-3.2z"/>',ssd:'<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 14h.01M11 14h6"/>',open:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>'};
+const svg=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[n]||''}</svg>`;
+document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=svg(e.dataset.i));
+
+const state={os:'mac',helper:'wait',theme:'light'};
+const slides=[...document.querySelectorAll('.slide')];
+let cur=0;
+const $=id=>document.getElementById(id);
+$('dots').innerHTML=slides.map((_,i)=>`<button aria-label="${i+1} 枚目"></button>`).join('');
+$('progress').innerHTML=slides.map(()=>'<i></i>').join('');
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  const w=slides[0].getBoundingClientRect().width+24, cw=$('car').clientWidth;
+  $('track').style.transform=`translateX(${cw/2-w/2+12-cur*w}px)`;
+  slides.forEach((s,k)=>s.classList.toggle('cur',k===cur));
+  [...$('dots').children].forEach((d,k)=>d.classList.toggle('on',k===cur));
+  [...$('progress').children].forEach((d,k)=>d.classList.toggle('on',k<=cur));
+  const f=slides[cur].querySelector('input');if(f)setTimeout(()=>f.focus({preventScroll:true}),350);
+}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-next]')&&!e.target.closest('[data-next]').disabled)go(cur+1);
+  if(e.target.closest('[data-prev]'))go(cur-1);
+  const d=e.target.closest('#dots button');if(d)go([...$('dots').children].indexOf(d));
+});
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'&&!slides[cur].querySelector('[data-next]:disabled'))go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
+window.addEventListener('resize',()=>go(cur));
+$('importBtn').onclick=()=>{alert('（モック）ファイル選択 → 取り込み → 完了カードへ');go(slides.length-1)};
+$('toOptions').onclick=()=>alert('（モック）設定画面を開く');
+
+// 保存先
+const setPath=p=>{$('dPath').value=p;if(!$('dName').value)$('dName').value=p.split('/').filter(Boolean).pop();vDest()};
+document.querySelectorAll('[data-path]').forEach(b=>b.onclick=()=>setPath(b.dataset.path));
+$('pick').onclick=()=>setPath('/Users/toya/Library/CloudStorage/GoogleDrive-x/マイドライブ/大学');
+const vDest=()=>{$('destNext').disabled=!($('dPath').value.trim()&&$('dName').value.trim());$('pDest').textContent=$('dName').value.trim()||'保存先'};
+$('dPath').oninput=vDest;$('dName').oninput=vDest;
+// ルール
+$('rDom').oninput=()=>{let v=$('rDom').value.trim().toLowerCase().replace(/^https?:\/\//,'').split('/')[0].replace(/^www\./,'');$('pDom').textContent=v||'サイト';$('pFav').textContent=(v[0]||'?').toUpperCase();$('ruleNext').disabled=!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(v);$('doneLead').innerHTML=`これからは <b>${v||'…'}</b> のダウンロードが <b>${$('dName').value.trim()||'…'}</b> に自動でしまわれます。`};
+
+function render(){
+  document.documentElement.dataset.theme=state.theme;
+  document.querySelectorAll('[data-os]').forEach(e=>e.hidden=e.dataset.os!==state.os);
+  const ok=state.helper==='ok';
+  $('wait').hidden=ok;$('okmsg').hidden=!ok;$('installNext').disabled=!ok;
+}
+document.querySelectorAll('.mseg').forEach(seg=>seg.onclick=e=>{const b=e.target.closest('button');if(!b)return;seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));state[seg.dataset.k]=b.dataset.v;render();if(seg.dataset.k==='helper'&&b.dataset.v==='ok'&&cur===0)setTimeout(()=>go(1),700)});
+render();go(0);
+</script>
+</body>
+</html>
