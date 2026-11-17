@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>shimau</title>
+<link rel="stylesheet" href="../ui/common.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="pop-head">
+    <div class="logo" data-icon="route"></div>
+    <b>shimau</b>
+    <div class="status"><span class="dot" id="hdot"></span><span id="htext">確認中…</span></div>
+  </header>
+  <main class="pop-body">
+    <div class="banner" id="hbanner" hidden>
+      <span data-icon="alert"></span>
+      <div><b>ヘルパーに接続できません</b>振り分けは一時停止中です。ダウンロードは Brave 標準の場所に保存されます。<br>
+        <button class="btn text" style="padding:4px 0" data-open="helper">インストール手順を見る →</button></div>
+    </div>
+    <section class="card site" id="site"></section>
+    <div class="sec-title">最近の振り分け</div>
+    <section class="card recent" id="recent"></section>
+  </main>
+  <footer class="pop-foot">
+    <button class="btn text" style="color:var(--text-2)" data-open="history"><span data-icon="clock"></span>履歴</button>
+    <button class="btn ghost" data-open="rules"><span data-icon="gear"></span>設定を開く</button>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

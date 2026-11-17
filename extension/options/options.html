@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>shimau - 設定</title>
+<link rel="stylesheet" href="../ui/common.css">
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="opt">
+  <nav class="side" id="side" aria-label="設定メニュー">
+    <div class="brand"><div class="logo" data-icon="route"></div><b>shimau</b></div>
+    <a class="nav" href="#rules"><span data-icon="list"></span>ルール<span class="badge" id="n-rules"></span></a>
+    <a class="nav" href="#dests"><span data-icon="folder"></span>保存先<span class="badge" id="n-dests"></span></a>
+    <a class="nav" href="#history"><span data-icon="clock"></span>履歴</a>
+    <a class="nav" href="#backup"><span data-icon="box"></span>バックアップ</a>
+    <a class="nav" href="#helper"><span data-icon="plug"></span>ヘルパー</a>
+    <div class="foot"><span class="dot" data-hdot></span><span data-htext>確認中…</span></div>
+  </nav>
+
+  <main class="main" id="main">
+    <div class="banner" id="hbanner" hidden style="margin-bottom:18px">
+      <span data-icon="alert"></span>
+      <div><b>ヘルパーに接続できません</b>ヘルパーがないと振り分けできません（ダウンロードは Brave 標準の場所に保存されます）。1 コマンドでインストールできます。
+        <a class="btn text" style="padding:2px 0" href="#helper">手順を見る →</a></div>
+    </div>
+
+    <section class="view" data-v="rules">
+      <div class="head">
+        <div><h1>ルール</h1><p class="lead">登録したサイトのダウンロードだけを振り分けます。それ以外は Brave の設定のままです。</p></div>
+        <div class="actions">
+          <label class="search"><span data-icon="search"></span><input id="q" placeholder="ドメインを検索" aria-label="ドメインを検索"></label>
+          <button class="btn primary" data-add-rule><span data-icon="plus"></span>追加</button>
+        </div>
+      </div>
+      <div class="list" id="rules"></div>
+    </section>
+
+    <section class="view" data-v="dests">
+      <div class="head">
+        <div><h1>保存先</h1><p class="lead">名前を付けた保存先を、Mac と Windows それぞれのパスで登録します。今の PC は <b id="os-name"></b> です。</p></div>
+        <div class="actions"><button class="btn primary" data-add-dest><span data-icon="plus"></span>保存先を追加</button></div>
+      </div>
+      <div class="list" id="dests"></div>
+    </section>
+
+    <section class="view" data-v="history">
+      <div class="head">
+        <div><h1>履歴</h1><p class="lead">直近 200 件の振り分け結果です。行をクリックするとフォルダを開きます。</p></div>
+        <div class="actions">
+          <div class="seg" id="hfilter"><button class="on" data-f="all">すべて</button><button data-f="fail">失敗のみ</button></div>
+          <button class="btn ghost" id="hclear"><span data-icon="trash"></span>消去</button>
+        </div>
+      </div>
+      <div id="history"></div>
+    </section>
+
+    <section class="view" data-v="backup">
+      <h1>バックアップ</h1><p class="lead">ルールと保存先を JSON で書き出し、もう一方の PC で読み込めます。</p>
+      <div class="grid2">
+        <div class="card panel"><h2>書き出す</h2><p id="exp-desc"></p><button class="btn primary" id="export"><span data-icon="download"></span>JSON を書き出す</button></div>
+        <div class="card panel"><h2>読み込む</h2><p>同じドメインのルールは上書きするか確認します。保存先のパスは OS ごとに保持されます。</p>
+          <button class="btn ghost" id="import"><span data-icon="upload"></span>ファイルを選ぶ</button>
+          <input type="file" id="file" accept=".json,application/json" hidden></div>
+      </div>
+      <p class="small muted" style="margin-top:14px" id="last-exp"></p>
+    </section>
+
+    <section class="view" data-v="helper">
+      <h1>ヘルパー</h1><p class="lead">ファイルを保存先へ移動する小さなアプリです。Brave が必要なときだけ起動し、ネット通信はしません。</p>
+      <div class="card panel" style="margin-bottom:12px">
+        <div class="kv">
+          <div>状態</div><div class="inline"><span class="dot" data-hdot></span><span data-htext>確認中…</span></div>
+          <div>バージョン</div><div id="hver">—</div>
+          <div>拡張機能 ID</div><div><code id="extid"></code></div>
+        </div>
+      </div>
+      <div class="card panel"><h2>インストール手順</h2>
+        <ol class="steps">
+          <li>配布フォルダの <code>helper</code> を開く</li>
+          <li>Mac：ターミナルで <code>./install.sh</code> を実行<br>Windows：PowerShell で <code>powershell -ExecutionPolicy Bypass -File install.ps1</code> を実行</li>
+          <li>Brave を再起動して、この画面が「接続中」になれば完了</li>
+        </ol>
+        <div style="margin-top:14px"><button class="btn ghost" id="reconnect"><span data-icon="refresh"></span>再接続を試す</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"><span id="toast-msg"></span><button id="toast-btn" hidden></button></div>
+
+<div class="modal-bg" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle" id="mbox"></div>
+</div>
+
+<script type="module" src="options.js"></script>
+</body>
+</html>
