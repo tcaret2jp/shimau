@@ -11,21 +11,8 @@ const RELEASE = 'https://github.com/tcaret2jp/shimau/releases/latest/download/';
 const POLL_MS = 2000;
 
 const GUIDE = {
-  mac: {
-    label: 'Mac 用をダウンロード',
-    file: 'shimau-helper-mac.zip',
-    lead: 'ダウンロードが終わったら、<b>ターミナル</b>を開いて次のコマンドを貼り付けて実行してください。',
-    cmd: 'cd ~/Downloads && unzip -o shimau-helper-mac.zip -d shimau-helper && bash shimau-helper/install.sh',
-    hint: 'ターミナルは Spotlight（⌘ + スペース）で「ターミナル」と入力すると開けます。',
-  },
-  win: {
-    label: 'Windows 用をダウンロード',
-    file: 'shimau-helper-windows.zip',
-    lead: 'ダウンロードが終わったら、<b>PowerShell</b> を開いて次のコマンドを貼り付けて実行してください。',
-    // 展開に失敗したら古いフォルダで入れてしまわないよう、途中で止める
-    cmd: 'try { cd ~\\Downloads -ErrorAction Stop; Expand-Archive -Force shimau-helper-windows.zip shimau-helper -ErrorAction Stop; powershell -ExecutionPolicy Bypass -File .\\shimau-helper\\install.ps1 } catch { Write-Host $_ -ForegroundColor Red }',
-    hint: 'PowerShell はスタートメニューで「PowerShell」と入力すると開けます。',
-  },
+  mac: { label: 'Mac 用', file: 'shimau-helper-mac.zip' },
+  win: { label: 'Windows 用', file: 'shimau-helper-setup.exe' },
 };
 
 let timer = null;
@@ -34,29 +21,19 @@ let busy = false;
 async function init() {
   paintIcons();
   const { os } = await chrome.runtime.getPlatformInfo();
-  const g = GUIDE[os === 'win' ? 'win' : 'mac'];
+  const key = os === 'win' ? 'win' : 'mac';
+  const g = GUIDE[key];
   $('dl').href = RELEASE + g.file;
   $('dl-label').textContent = g.label;
-  $('dl-file').textContent = g.file;
-  $('cmd-lead').innerHTML = g.lead;
-  $('cmd').textContent = g.cmd;
-  $('cmd-hint').textContent = g.hint;
-  $('copy').onclick = () => copy(g.cmd);
-  if (os !== 'mac' && os !== 'win') $('cmd-hint').textContent = 'このパソコンの OS には対応していません（Mac / Windows 用です）。';
+  $('dl').title = g.file;
+  document.querySelectorAll('[data-os]').forEach((e) => (e.hidden = e.dataset.os !== key));
+  if (os !== 'mac' && os !== 'win') {
+    $('install').hidden = true;
+    $('wait').querySelector('span').textContent = 'このパソコンの OS には対応していません（Mac / Windows 用です）。';
+  }
 
   await check();
   document.addEventListener('visibilitychange', schedule);
-}
-
-async function copy(text) {
-  const label = $('copy-label');
-  try {
-    await navigator.clipboard.writeText(text);
-    label.textContent = 'コピーしました';
-  } catch {
-    label.textContent = 'コピーできませんでした';
-  }
-  setTimeout(() => (label.textContent = 'コピー'), 1500);
 }
 
 async function check() {

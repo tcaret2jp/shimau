@@ -25,24 +25,96 @@
       <div class="num" id="n2">2</div>
       <div class="body">
         <h3>ヘルパーを入れる</h3>
-        <p>ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。管理者権限も不要です。</p>
+        <p>ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。</p>
 
         <div id="install">
-          <div class="actions">
-            <a class="btn primary" id="dl" href="#"><span data-icon="download"></span><span id="dl-label"></span></a>
-            <span class="hint" id="dl-file"></span>
+          <div class="flow3">
+            <div class="tile">
+              <div class="tn">1</div>
+              <b>ダウンロード</b>
+              <a class="btn primary sm" id="dl" href="#"><span data-icon="download"></span><span id="dl-label"></span></a>
+            </div>
+            <div class="tile">
+              <div class="tn">2</div>
+              <b>開く</b>
+              <span data-os="mac">zip を開き、出てきた<br>「shimau ヘルパー」を<br>ダブルクリック</span>
+              <span data-os="win">ダウンロード一覧から<br>開く</span>
+            </div>
+            <div class="tile">
+              <div class="tn">3</div>
+              <b>完了</b>
+              <span>「インストールしました」<br>と出たらおしまい</span>
+            </div>
           </div>
-          <p class="gap" id="cmd-lead"></p>
-          <div class="cmd">
-            <code id="cmd"></code>
-            <button class="copy" id="copy"><span data-icon="copy"></span><span id="copy-label">コピー</span></button>
-          </div>
-          <div class="hint" id="cmd-hint"></div>
+
+          <details class="warn" id="warn">
+            <summary>
+              <span class="wi">!</span>
+              <span class="wt"><b>最初の 1 回は止められます</b><span data-os="mac">「開けません」と出たら、ここを開いてください</span><span data-os="win">「PC が保護されました」と出たら、ここを開いてください</span></span>
+              <span class="wchev" data-icon="chev"></span>
+            </summary>
+
+            <div class="wbody" data-os="mac">
+              <div class="shots">
+                <div class="shot">
+                  <div class="cap"><i>a</i>「完了」を押す</div>
+                  <div class="macdlg">
+                    <div class="ic">!</div>
+                    <b>“shimau ヘルパー”は開いていません</b>
+                    <div class="t">Apple は、“shimau ヘルパー”に Mac に損害を与えたり、プライバシーを侵害したりするマルウェアが含まれていないことを検証できませんでした。</div>
+                    <div class="bs"><span class="def press">完了</span><span>ゴミ箱に入れる</span></div>
+                  </div>
+                </div>
+                <div class="shot">
+                  <div class="cap"><i>b</i>設定で「このまま開く」</div>
+                  <div class="macset">
+                    <div class="h">セキュリティ</div>
+                    <div class="sub2">次からのアプリケーションの実行を許可<span>App Store と既知のデベロッパ ⌃</span></div>
+                    <div class="row"><span>“shimau ヘルパー”は Mac を保護するためにブロックされました。</span><span class="ob press">このまま開く</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="actions">
+                <a class="btn ghost sm" id="open-privacy" href="x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension"><span data-icon="open"></span>設定を開く</a>
+                <span class="hint">パスワードを聞かれたら入力し、もう一度「このまま開く」</span>
+              </div>
+            </div>
+
+            <div class="wbody" data-os="win">
+              <div class="shots">
+                <div class="shot">
+                  <div class="cap"><i>a</i>「詳細情報」を押す</div>
+                  <div class="smart">
+                    <b>Windows によって PC が保護されました</b>
+                    <div class="t">Microsoft Defender SmartScreen は認識されないアプリの起動を停止しました。このアプリを実行すると、PC に問題が起こる可能性があります。</div>
+                    <span class="lk press">詳細情報</span>
+                    <div class="bs"><span class="def">実行しない</span></div>
+                  </div>
+                </div>
+                <div class="shot">
+                  <div class="cap"><i>b</i>「実行」を押す</div>
+                  <div class="smart">
+                    <b>Windows によって PC が保護されました</b>
+                    <div class="t">Microsoft Defender SmartScreen は認識されないアプリの起動を停止しました。このアプリを実行すると、PC に問題が起こる可能性があります。</div>
+                    <div class="kv">アプリ:　shimau-helper-setup.exe<br>発行元:　不明な発行元</div>
+                    <div class="bs"><span class="press">実行</span><span class="def">実行しない</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
         </div>
 
         <div class="status" id="wait"><div class="spin"></div><span>ヘルパーの接続を待っています… インストールが終わると自動で次へ進みます。</span></div>
         <div class="status ok" id="okmsg" hidden><span data-icon="check"></span><span id="ok-text">ヘルパーとつながりました</span></div>
-        <div class="hint" id="trouble">うまくいかないときは、Brave を一度終了して開き直してください。</div>
+        <details class="trouble" id="trouble">
+          <summary>うまくいかないとき</summary>
+          <ul>
+            <li>「インストールしました」と出たのに進まない → Brave を一度終了して開き直してください。</li>
+            <li data-os="mac">「このまま開く」が見つからない → もう一度「shimau ヘルパー」をダブルクリックしてから、設定を開き直してください。</li>
+            <li data-os="win">「実行」が出ない → 「詳細情報」の文字を押すと出てきます。</li>
+          </ul>
+        </details>
       </div>
     </li>
 

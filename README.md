@@ -4,10 +4,11 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 
 > **名前の由来**：ダウンロードしたファイルを、あるべき場所に「ちゃんとしまっておくね」→ しまう → **shimau**。姉妹リポジトリ pomoru（ポモる）と同じく、やさしい日本語の動詞から付けた（2026-11-17 決定）。
 
-## 現状（2026-11-17）
+## 現状（2026-11-18）
 - 要件定義：完了・承認済み → [docs/requirements.md](docs/requirements.md)
 - デザインモック：OK 済み → [docs/mockup.html](docs/mockup.html)
-- 実装：拡張機能・ヘルパー・インストールスクリプトまで完了（v0.1.1）
+- 実装：拡張機能・ヘルパーまで完了（v0.2.0、Releases は未公開）
+  - v0.2.0：ヘルパーを**ターミナルなしで入れられる**ように変更。ダウンロードしてダブルクリックするだけ（Mac：zip の中の「shimau ヘルパー」アプリ、Windows：`shimau-helper-setup.exe`）。初回に出る OS の警告への対処は、はじめての設定画面で絵付きで案内（モック OK 済み → [docs/mockup-welcome-v3.html](docs/mockup-welcome-v3.html)）
   - v0.1.1：Codex と Claude Code で全コードを相互レビューし、不具合と動作の重さを修正（下の「v0.1.1 の改善」）
   - Pi で確認済み：単体テスト（拡張・ヘルパー）、Chromium＋ヘルパーでの通しテスト（振り分け・同名ファイルの連番・ルール OFF のときは介入しない）
   - **未確認**：Mac / Windows 実機での動作（下の「実機での確認項目」）
@@ -17,8 +18,9 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.1.1（ヘルパーの zip）を公開済み
 
 ## 次にやること
-1. Mac / Windows 実機でインストールして動作確認（とーや）
-2. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
+1. v0.2.0 を Releases に公開（`shimau-helper-mac.zip` と `shimau-helper-setup.exe`）。はじめての設定画面のダウンロードボタンは最新の Release を見るので、公開するまでボタンは動かない
+2. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
+3. 実機で見つかった問題の修正
 
 ## 構成
 ```
@@ -27,8 +29,11 @@ extension/        Brave 拡張（Manifest V3、素の JS + CSS）
   lib/            ドメイン判定・バックアップ・ストレージ・ヘルパー通信
   popup/ options/ ポップアップ・設定画面
 helper/           ネイティブヘルパー（Go）
-  build.sh        Mac(arm64/amd64)・Windows(amd64) 向けにビルドし dist/ に zip を作る
-  install/        install.sh / install.ps1 とアンインストール用スクリプト
+  install*.go     ダブルクリックで開いたときのインストーラー（自分をコピーして Brave に登録）
+  build.sh        Mac 用アプリ（zip）と Windows 用セットアップ（exe）を dist/ に作る
+  tools/macapp.py Mac 用アプリを Pi 上で組み立てる（ユニバーサルバイナリ・アイコン・Info.plist）
+  sign-mac.sh     Pi で署名できないときに、Mac で Mac 用アプリを署名する
+  install/        旧インストールスクリプト（v0.1 のターミナル用。配布物には入れない）
 tests/            拡張の単体テスト（node --test）
 docs/             要件定義・デザインモック
 ```
@@ -41,13 +46,20 @@ docs/             要件定義・デザインモック
 4. 「はじめての設定」タブが自動で開くので、その案内どおりにヘルパーを入れる（設定画面の「ヘルパー」からも開ける）
 
 ### 2. ヘルパー
-`helper/build.sh` で作った zip（`helper/dist/`）を展開して実行する。
-- Mac：`shimau-helper-mac.zip` を展開 → ターミナルで `./install.sh`
-- Windows：`shimau-helper-windows.zip` を展開 → PowerShell で `powershell -ExecutionPolicy Bypass -File install.ps1`
+はじめての設定画面の「ダウンロード」から入れる（中身は `helper/build.sh` で作る `helper/dist/` のファイル）。
+- Mac：`shimau-helper-mac.zip` を開き、出てきた「shimau ヘルパー」をダブルクリック。初回は「開けません」と出るので、システム設定 → プライバシーとセキュリティ → 「このまま開く」
+- Windows：`shimau-helper-setup.exe` をダブルクリック。初回は「PC が保護されました」と出るので、「詳細情報」→「実行」
 
-Brave を再起動し、設定画面の「ヘルパー」が「接続中」になれば完了。どちらも管理者権限は不要。
+「インストールしました」と出れば完了。管理者権限は不要。同じ版をもう一度開くと「入れ直す／削除する」を選べる（アンインストールもここから）。
+ヘルパーの置き場所：Mac `~/Library/Application Support/shimau/shimau-helper`、Windows `%LOCALAPPDATA%\shimau\shimau-helper.exe`。
 
 ### 実機での確認項目
+0. ヘルパーのインストール
+   - Mac：zip を開いてダブルクリック → 「開けません」→「このまま開く」でパスワードを聞かれるか、文言が画面の見本どおりか → 「インストールしました」が前面に出るか
+   - Mac：はじめての設定画面の「設定を開く」で、プライバシーとセキュリティが直接開くか
+   - Windows：Brave が exe のダウンロード時に警告を出すか → SmartScreen の「詳細情報」→「実行」→「インストールしました」
+   - 入れたあと、Brave を再起動しなくても「はじめての設定」が自動で次へ進むか
+   - 同じファイルをもう一度開く →「削除する」で消えるか
 1. 未登録サイトでダウンロード → Brave 標準のフォルダに保存される
 2. 登録サイトでダウンロード → ローカル／Googleドライブ／Dropbox／SSD に移動され、通知が出る
 3. SSD を外した状態でダウンロード → ダウンロードフォルダに残り、通知が出る
@@ -81,6 +93,7 @@ npm test                                   # 拡張の単体テスト
 cd helper && go test ./... && ./build.sh   # ヘルパーのテストとビルド
 ```
 Go は Pi の `~/.local/go`（sudo なしで導入）を使う。
+Mac 用アプリの署名（ad-hoc、無料）は Pi の `~/.local/bin/rcodesign`（apple-codesign 0.29.0）で `build.sh` が自動で行う。署名しないと Mac で「壊れているため開けません」になるため、rcodesign がないときは `shimau-helper-mac-unsigned.zip` だけを作る（そのときは Mac で `helper/sign-mac.sh`）。
 
 ## 経緯
 - アイデア出しと要件定義は `00_cc` のセッションで実施

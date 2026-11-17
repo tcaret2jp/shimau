@@ -21,16 +21,79 @@ h1{font-size:24px;margin:0 0 6px;letter-spacing:.01em}
 .actions{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hint{margin-top:8px;font-size:12px;color:var(--text-3)}
 .actions .hint{margin:0}
-.cmd{margin-top:10px;display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:9px;padding:8px 8px 8px 12px}
-.cmd code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;user-select:all}
-.copy{border:0;background:var(--surface);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;display:inline-flex;gap:5px;align-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.copy svg{width:13px;height:13px}
 .status{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13px}
 .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .status.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:color-mix(in srgb,var(--ok) 70%,var(--text))}
 .status.ok svg{width:16px;height:16px}
 .foot{text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-3)}
+/* ---------- ヘルパーを入れる：3 つのタイル ---------- */
+.flow3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.tile{position:relative;background:var(--surface-2);border-radius:10px;padding:12px 10px;text-align:center;font-size:11.5px;color:var(--text-2);line-height:1.45;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tile b{color:var(--text);font-size:13px}
+.tile .tn{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.tile + .tile::before{content:"";position:absolute;left:-7px;top:50%;width:6px;height:6px;border-top:1.5px solid var(--text-3);border-right:1.5px solid var(--text-3);transform:translateY(-50%) rotate(45deg)}
+.btn.sm{padding:6px 11px;font-size:12px;margin-top:2px}
+.btn.sm svg{width:13px;height:13px}
+@media (max-width:520px){.flow3{grid-template-columns:1fr}.tile + .tile::before{display:none}.tile br{display:none}}
+
+/* 初回の警告（たたみ） */
+details.warn{margin-top:10px;border-radius:10px;background:color-mix(in srgb,var(--warn) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+details.warn summary{list-style:none;display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer}
+details.warn summary::-webkit-details-marker{display:none}
+.wi{width:20px;height:20px;border-radius:50%;background:var(--warn);color:#fff;font-weight:900;font-size:12px;display:grid;place-items:center;flex:none}
+.wt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:11.5px;color:var(--text-2);line-height:1.4}
+.wt b{font-size:12.5px;color:var(--text)}
+.wchev{color:var(--text-3);transform:rotate(90deg);transition:transform .2s;flex:none}
+.wchev svg{width:16px;height:16px}
+details.warn[open] .wchev{transform:rotate(-90deg)}
+.wbody{padding:2px 12px 12px}
+.wbody .actions{margin-top:10px}
+.wbody .actions .hint{margin:0}
+
+/* OS の画面の見本 */
+.shots{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.shot{flex:1 1 220px;min-width:0;background:var(--surface-2);border-radius:10px;padding:12px}
+.shot .cap{font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:8px;display:flex;gap:6px;align-items:center}
+.shot .cap i{font-style:normal;width:16px;height:16px;border-radius:50%;background:var(--text-3);color:var(--surface);display:grid;place-items:center;font-size:10px}
+.press{box-shadow:0 0 0 2.5px var(--accent),0 0 0 6px var(--accent-soft)!important}
+
+.macdlg{background:#ececec;color:#1d1d1f;border-radius:12px;padding:14px 14px 12px;text-align:center;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.18);max-width:250px;margin:0 auto}
+.macdlg .ic{width:30px;height:30px;margin:0 auto 6px;border-radius:7px;background:linear-gradient(#ffd34d,#f5a623);display:grid;place-items:center;color:#7a4b00;font-weight:900;font-size:17px}
+.macdlg b{display:block;font-size:11.5px;margin-bottom:4px}
+.macdlg .t{color:#555;line-height:1.45}
+.macdlg .bs{display:grid;gap:5px;margin-top:10px}
+.macdlg .bs span{display:block;padding:4px;border-radius:6px;background:#fff;font-weight:600}
+.macdlg .bs span.def{background:#2f7cf6;color:#fff}
+.macset{background:#fff;color:#1d1d1f;border-radius:10px;padding:10px 12px;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.macset .h{font-weight:700;margin-bottom:6px}
+.macset .sub2{display:flex;justify-content:space-between;gap:8px;color:#555;padding:6px 0 8px;font-size:10.5px}
+.macset .sub2 span{color:#1d1d1f;font-weight:500}
+.macset .row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
+.macset .row span:first-child{color:#555;line-height:1.4}
+.macset .ob{flex:none;padding:3px 9px;border-radius:6px;background:#e8e8ed;font-weight:600}
+@media (prefers-color-scheme:dark){
+  .macdlg{background:#323236;color:#eee}
+  .macdlg .t{color:#bbb}
+  .macdlg .bs span{background:#4a4a4f}
+  .macset{background:#2a2a2e;color:#eee}
+  .macset .sub2,.macset .row span:first-child{color:#bbb}
+  .macset .sub2 span{color:#eee}
+  .macset .row{border-top-color:rgba(255,255,255,.1)}
+  .macset .ob{background:#4a4a4f}
+}
+.smart{min-height:150px;display:flex;flex-direction:column;background:#0b5cad;color:#fff;border-radius:4px;padding:12px 14px 10px;font-size:11px;font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.smart b{display:block;font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.35}
+.smart .t{opacity:.9;line-height:1.45}
+.smart .lk{align-self:flex-start;margin-top:6px;text-decoration:underline;padding:1px 3px;border-radius:3px}
+.smart .kv{margin-top:6px;opacity:.85;line-height:1.5}
+.smart .bs{margin-top:auto;padding-top:12px;display:flex;justify-content:flex-end;gap:6px}
+.smart .bs span{padding:3px 14px;border:1px solid rgba(255,255,255,.75);border-radius:2px}
+.smart .bs span.def{background:rgba(255,255,255,.12)}
+
+details.trouble{margin-top:10px;font-size:12px;color:var(--text-3)}
+details.trouble summary{cursor:pointer}
+details.trouble ul{margin:6px 0 0;padding-left:18px;color:var(--text-2)}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
 
 /* ---------- チュートリアル（カルーセル） ---------- */

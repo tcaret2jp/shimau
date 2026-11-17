@@ -3,6 +3,7 @@
 // Native Messaging（標準入出力・4バイト長＋JSON）でコマンドを受け取り、
 // ダウンロードフォルダ内のファイルを登録済みの保存先へ移動する。
 // Brave が必要なときだけ起動し、常駐もネット通信もしない。
+// ダブルクリックで開くと、自分を決まった場所へコピーして Brave に登録する（install.go）。
 package main
 
 import (
@@ -16,7 +17,7 @@ import (
 	"runtime"
 )
 
-const version = "0.1.1"
+const version = "0.2.0"
 
 // 受け取るメッセージの上限（Chrome → ホストは最大 64MiB だが、ここでは十分小さくてよい）
 const maxMessage = 1 << 20
@@ -48,6 +49,11 @@ func main() {
 	log.SetPrefix("shimau-helper: ")
 	if len(os.Args) > 1 && (os.Args[1] == "--version" || os.Args[1] == "-v") {
 		fmt.Printf("shimau-helper %s (%s/%s)\n", version, runtime.GOOS, runtime.GOARCH)
+		return
+	}
+	// ダブルクリックで開かれたとき（Brave からの起動ではないとき）はインストーラーとして動く
+	if len(embeddedHelper) > 0 || !isNativeMessaging(os.Args) {
+		runInstaller()
 		return
 	}
 	a, err := newApp()
