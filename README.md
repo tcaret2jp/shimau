@@ -11,12 +11,11 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
   - Pi で確認済み：単体テスト（拡張・ヘルパー）、Chromium＋ヘルパーでの通しテスト（振り分け・同名ファイルの連番・ルール OFF のときは介入しない）
   - **未確認**：Mac / Windows 実機での動作（下の「実機での確認項目」）
 - はじめての設定画面：拡張機能を初めて入れたときに自動で開き、ヘルパーのダウンロード・インストール用コマンド・接続確認を案内する（モック OK 済み → [docs/mockup-welcome.html](docs/mockup-welcome.html)）
-- GitHub：https://github.com/tcaret2jp/shimau （Public）
+- GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.1.0（ヘルパーの zip）を公開済み
 
 ## 次にやること
-1. 配布用 zip を GitHub Releases に置く（はじめての設定画面のダウンロードボタンはここを見る）
-2. Mac / Windows 実機でインストールして動作確認（とーや）
-3. 実機で見つかった問題の修正
+1. Mac / Windows 実機でインストールして動作確認（とーや）
+2. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
 
 ## 構成
 ```
