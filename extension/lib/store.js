@@ -13,8 +13,31 @@ export async function load() {
   return { rules: d.rules || [], dests: d.dests || [], history: d.history || [], lastExport: d.lastExport || null };
 }
 
+/** ルールと保存先だけ読む（ダウンロードのたびに 200 件の履歴まで読まないため） */
+export async function loadConfig() {
+  const d = await chrome.storage.local.get(['rules', 'dests']);
+  return { rules: d.rules || [], dests: d.dests || [] };
+}
+
 export const saveRules = (rules) => chrome.storage.local.set({ rules });
-export const saveDests = (dests) => chrome.storage.local.set({ dests });
+
+/**
+ * 最新の内容を読み直してから書き換える（ほかの画面での変更を古い内容で上書きしないため）。
+ * fn は配列を直接書き換える。false を返すと保存しない。戻り値は書き換え後の配列。
+ */
+let listQueue = Promise.resolve();
+function updateList(key, fn) {
+  const run = async () => {
+    const { [key]: list = [] } = await chrome.storage.local.get(key);
+    if (fn(list) !== false) await chrome.storage.local.set({ [key]: list });
+    return list;
+  };
+  const p = listQueue.then(run, run);
+  listQueue = p.catch(() => {});
+  return p;
+}
+export const updateRules = (fn) => updateList('rules', fn);
+export const updateDests = (fn) => updateList('dests', fn);
 
 // 同時に完了したダウンロードの記録が上書きし合わないよう、1件ずつ順番に書く
 let historyQueue = Promise.resolve();
@@ -24,8 +47,9 @@ export function addHistory(entry) {
     history.unshift({ id: newId(), time: Date.now(), ...entry });
     await chrome.storage.local.set({ history: history.slice(0, HISTORY_LIMIT) });
   };
-  historyQueue = historyQueue.then(run, run);
-  return historyQueue;
+  const p = historyQueue.then(run, run);
+  historyQueue = p.catch(() => {});
+  return p;
 }
 
 export const clearHistory = () => chrome.storage.local.set({ history: [] });

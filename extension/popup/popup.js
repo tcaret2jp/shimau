@@ -1,5 +1,5 @@
 import { hostOf, siteDomain, findRule } from '../lib/domain.js';
-import { load, saveRules, newId, currentOs } from '../lib/store.js';
+import { load, updateRules, newId, currentOs } from '../lib/store.js';
 import { ping, call } from '../lib/native.js';
 import { svg, esc, chip, fav, paintIcons, relTime, destKind } from '../ui/parts.js';
 
@@ -8,13 +8,23 @@ let S, os, host, picking = false;
 
 async function init() {
   paintIcons();
-  [S, os] = await Promise.all([load(), currentOs()]);
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  ping().then(renderHelper); // ヘルパーの確認は待たずに先に始める
+  let tab;
+  [S, os, [tab]] = await Promise.all([load(), currentOs(), chrome.tabs.query({ active: true, currentWindow: true })]);
   host = hostOf(tab?.url);
   renderSite();
   renderRecent();
-  ping().then(renderHelper);
 }
+
+// 設定画面など別の場所での変更を反映する
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area !== 'local' || !S) return;
+  if (c.rules) S.rules = c.rules.newValue || [];
+  if (c.dests) S.dests = c.dests.newValue || [];
+  if (c.history) S.history = c.history.newValue || [];
+  if (c.rules || c.dests) renderSite();
+  if (c.history || c.dests) renderRecent();
+});
 
 function renderHelper(h) {
   $('hdot').className = 'dot ' + (h.connected ? 'ok' : 'ng');
@@ -58,8 +68,9 @@ function renderSite() {
       }`;
     if ($('add')) $('add').onclick = () => { picking = true; renderSite(); };
     bindPicker(async (destId) => {
-      S.rules.push({ id: newId(), domain: dom, destId, includeSubdomains: true, enabled: true });
-      await saveRules(S.rules);
+      S.rules = await updateRules((rules) => {
+        if (!rules.some((r) => r.domain === dom)) rules.push({ id: newId(), domain: dom, destId, includeSubdomains: true, enabled: true });
+      });
     });
   }
 }
@@ -88,8 +99,10 @@ function bindPicker(onChoose) {
 }
 
 async function update(rule, patch) {
-  Object.assign(rule, patch);
-  await saveRules(S.rules);
+  S.rules = await updateRules((rules) => {
+    const r = rules.find((x) => x.id === rule.id);
+    if (r) Object.assign(r, patch);
+  });
   renderSite();
 }
 

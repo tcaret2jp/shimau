@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // テスト用の環境：ダウンロードフォルダと保存先を一時フォルダに作る
@@ -134,34 +135,96 @@ func TestMoveDestMissingKeepsFile(t *testing.T) {
 	}
 }
 
-func TestCopyThenRemove(t *testing.T) {
+func TestCopyAcross(t *testing.T) {
 	_, dl, dest := setup(t)
+	write(t, filepath.Join(dest, "big.bin"), "old")
 	src := filepath.Join(dl, "big.bin")
-	write(t, src, strings.Repeat("z", 100000))
+	write(t, src, strings.Repeat("z", 3<<20)) // バッファ（1MB）より大きい
 	fi, _ := os.Stat(src)
-	dst := filepath.Join(dest, "big.bin")
-	if err := copyThenRemove(src, dst, fi); err != nil {
+	got, err := copyAcross(src, dest, "big.bin", fi)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if di, _ := os.Stat(dst); di.Size() != 100000 {
-		t.Fatal("サイズ違い")
+	if filepath.Base(got) != "big (1).bin" {
+		t.Fatalf("got %s", got)
+	}
+	if di, _ := os.Stat(got); di.Size() != 3<<20 || di.Mode().Perm() != 0o644 {
+		t.Fatalf("size/perm %v", di)
+	}
+	if b, _ := os.ReadFile(filepath.Join(dest, "big.bin")); string(b) != "old" {
+		t.Fatal("既存ファイルが上書きされた")
 	}
 	if _, err := os.Stat(src); !os.IsNotExist(err) {
 		t.Fatal("元が残っている")
 	}
-	// 宛先があるときは errExists、元は残る
-	write(t, src, "again")
-	fi, _ = os.Stat(src)
-	if err := copyThenRemove(src, dst, fi); err != errExists {
-		t.Fatalf("got %v", err)
+	assertNoParts(t, dest)
+}
+
+func assertNoParts(t *testing.T, dir string) {
+	t.Helper()
+	ents, _ := os.ReadDir(dir)
+	for _, e := range ents {
+		if strings.HasPrefix(e.Name(), partPrefix) {
+			t.Fatalf("一時ファイルが残っている: %s", e.Name())
+		}
 	}
-	if _, err := os.Stat(src); err != nil {
-		t.Fatal("元が消えた")
+}
+
+func TestCopyAcrossKeepsReplacedSource(t *testing.T) {
+	_, dl, dest := setup(t)
+	src := filepath.Join(dl, "a.txt")
+	write(t, src, "original")
+	fi, _ := os.Stat(src)
+	tmp, in, err := copyToTemp(src, dest, fi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmp)
+	// コピー中に同じ名前の別ファイルへ差し替えられた
+	os.Remove(src)
+	write(t, src, "another")
+	removeSource(src, in)
+	if b, _ := os.ReadFile(src); string(b) != "another" {
+		t.Fatal("差し替え後の別ファイルを消してしまった")
+	}
+}
+
+func TestCleanStaleParts(t *testing.T) {
+	_, _, dest := setup(t)
+	old := filepath.Join(dest, partPrefix+"1"+partSuffix)
+	fresh := filepath.Join(dest, partPrefix+"2"+partSuffix)
+	write(t, old, "x")
+	write(t, fresh, "x")
+	past := time.Now().Add(-48 * time.Hour)
+	os.Chtimes(old, past, past)
+	cleanStaleParts(dest)
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatal("古い一時ファイルが残っている")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Fatal("コピー中かもしれない新しい一時ファイルを消した")
+	}
+}
+
+func TestTrailingSpaceName(t *testing.T) {
+	a, dl, dest := setup(t)
+	write(t, filepath.Join(dl, "r.pdf"), "plain")
+	src := filepath.Join(dl, "r.pdf ")
+	write(t, src, "space")
+	got, err := a.move(src, dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(got); string(b) != "space" {
+		t.Fatal("別のファイルを動かした")
+	}
+	if _, err := os.Stat(filepath.Join(dl, "r.pdf")); err != nil {
+		t.Fatal("空白なしのファイルが動いた")
 	}
 }
 
 func TestNumbered(t *testing.T) {
-	cases := map[string]string{"a.pdf": "a (3).pdf", "archive.tar.gz": "archive.tar (3).gz", "noext": "noext (3)", ".env": ".env (3)"}
+	cases := map[string]string{"a.pdf": "a (3).pdf", "archive.tar.gz": "archive (3).tar.gz", "x.TAR.XZ": "x (3).TAR.XZ", "noext": "noext (3)", ".env": ".env (3)", "a.b.c": "a.b (3).c"}
 	for in, want := range cases {
 		if got := numbered(in, 3); got != want {
 			t.Errorf("%s → %s, want %s", in, got, want)

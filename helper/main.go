@@ -16,7 +16,7 @@ import (
 	"runtime"
 )
 
-const version = "0.1.0"
+const version = "0.1.1"
 
 // 受け取るメッセージの上限（Chrome → ホストは最大 64MiB だが、ここでは十分小さくてよい）
 const maxMessage = 1 << 20

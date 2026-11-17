@@ -18,16 +18,23 @@ if [ ! -f "$HERE/$BIN" ]; then
 fi
 
 mkdir -p "$APP_DIR"
-cp "$HERE/$BIN" "$APP_DIR/shimau-helper"
-chmod 755 "$APP_DIR/shimau-helper"
+# 上書きコピーすると、Apple Silicon では古い署名情報と食い違って起動できなくなることがある。
+# 別名でコピーしてから置き換える。
+cp "$HERE/$BIN" "$APP_DIR/.shimau-helper.new"
+chmod 755 "$APP_DIR/.shimau-helper.new"
+mv -f "$APP_DIR/.shimau-helper.new" "$APP_DIR/shimau-helper"
 # ダウンロードしたファイルに付く「隔離」属性を外す（未署名でも起動できるように）
 xattr -d com.apple.quarantine "$APP_DIR/shimau-helper" 2>/dev/null || true
+
+# JSON に入れるため、パスの \ と " をエスケープする
+json_escape() { printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'; }
+HELPER_JSON=$(json_escape "$APP_DIR/shimau-helper")
 
 MANIFEST=$(cat <<EOF
 {
   "name": "$HOST_NAME",
   "description": "shimau helper",
-  "path": "$APP_DIR/shimau-helper",
+  "path": "$HELPER_JSON",
   "type": "stdio",
   "allowed_origins": ["chrome-extension://$EXT_ID/"]
 }

@@ -1,13 +1,15 @@
 import { normalizeDomain } from '../lib/domain.js';
-import { load, saveRules, saveDests, clearHistory, newId, currentOs } from '../lib/store.js';
-import { ping, call } from '../lib/native.js';
+import { load, updateRules, updateDests, clearHistory, newId, currentOs } from '../lib/store.js';
+import { call, session } from '../lib/native.js';
 import { buildExport, parseImport, previewMerge, mergeImport } from '../lib/backup.js';
 import { detectKind, KIND_LABEL } from '../lib/kinds.js';
 import { svg, esc, chip, fav, paintIcons, fmtTime, destKind, isOn, setToggle } from '../ui/parts.js';
 
 const $ = (id) => document.getElementById(id);
 const OS_NAME = { mac: 'Mac', win: 'Windows' };
-let S, os, other, helper = { connected: false }, access = {}, hfilter = 'all';
+let S, os, other, helper = { connected: false }, access = null, hfilter = 'all';
+let modalGen = 0; // 開いているダイアログの世代（閉じた後に届いた結果を捨てるため）
+let accessSeq = 0; // 保存先の確認の世代（古い結果で上書きしないため）
 
 /* ---------- 起動 ---------- */
 async function init() {
@@ -30,24 +32,64 @@ async function reload() {
   renderAll();
 }
 
-function renderAll() {
-  $('n-rules').textContent = S.rules.length || '';
-  $('n-dests').textContent = S.dests.length || '';
-  renderRules();
-  renderDests();
-  renderHistory();
-  renderBackup();
+/* 描画：表示中の画面だけ描き、ほかは切り替えたときに描く */
+const RENDER = { rules: () => renderRules(), dests: () => renderDests(), history: () => renderHistory(), backup: () => renderBackup() };
+const dirty = new Set();
+let current = 'rules';
+
+function invalidate(...views) {
+  for (const v of views) {
+    if (v === current) RENDER[v]();
+    else dirty.add(v);
+  }
 }
 
-// ポップアップなど別の画面で変更されたら反映する
+function renderAll() {
+  renderBadges();
+  Object.keys(RENDER).forEach((v) => dirty.add(v));
+  if (dirty.delete(current)) RENDER[current]?.();
+}
+
+function renderBadges() {
+  $('n-rules').textContent = S.rules.length || '';
+  $('n-dests').textContent = S.dests.length || '';
+}
+
+// ポップアップなど別の画面での変更を、変わった部分だけ反映する
 chrome.storage.onChanged.addListener((c, area) => {
-  if (area === 'local') reload();
+  if (area !== 'local' || !S) return;
+  if (c.rules) S.rules = c.rules.newValue || [];
+  if (c.dests) S.dests = c.dests.newValue || [];
+  if (c.history) S.history = c.history.newValue || [];
+  if (c.lastExport) S.lastExport = c.lastExport.newValue || null;
+  if (c.rules || c.dests) {
+    renderBadges();
+    invalidate('rules', 'dests', 'backup');
+  }
+  if (c.dests) {
+    invalidate('history');
+    checkAccess();
+  }
+  if (c.history) invalidate('history');
+  if (c.lastExport) invalidate('backup');
 });
+
+// 保存先 id → 保存先、保存先 id → ルール数（描画のたびに配列を何度も探さないため）
+function destIndex() {
+  return new Map(S.dests.map((d) => [d.id, d]));
+}
+function ruleCounts() {
+  const m = new Map();
+  for (const r of S.rules) m.set(r.destId, (m.get(r.destId) || 0) + 1);
+  return m;
+}
 
 /* ---------- 画面切り替え（#rules など） ---------- */
 function route() {
   const v = (location.hash || '#rules').slice(1);
   const view = document.querySelector(`.view[data-v="${CSS.escape(v)}"]`) ? v : 'rules';
+  current = view;
+  if (S && dirty.delete(view)) RENDER[view]?.();
   document.querySelectorAll('.view').forEach((s) => s.classList.toggle('on', s.dataset.v === view));
   document.querySelectorAll('.nav').forEach((n) => {
     const on = n.getAttribute('href') === '#' + view;
@@ -60,12 +102,26 @@ window.addEventListener('hashchange', route);
 
 /* ---------- ヘルパー ---------- */
 async function checkHelper() {
-  helper = await ping();
+  // 接続確認と保存先の確認を 1 回の接続で済ませる
+  const seq = ++accessSeq;
+  const paths = S.dests.map((d) => d.paths?.[os]).filter(Boolean);
+  try {
+    await session(async (send) => {
+      const r = await send('ping');
+      helper = { connected: true, version: r.version, os: r.os, arch: r.arch };
+      access = paths.length ? (await send('checkPaths', { paths }).catch(() => null))?.result || null : {};
+    });
+  } catch {
+    helper = { connected: false };
+    access = null;
+  }
+  // 確認中に保存先が変わり、新しい確認が始まっていたら、そちらの結果を使う
+  if (seq !== accessSeq) access = null;
   document.querySelectorAll('[data-hdot]').forEach((d) => (d.className = 'dot ' + (helper.connected ? 'ok' : 'ng')));
   document.querySelectorAll('[data-htext]').forEach((d) => (d.textContent = helper.connected ? 'ヘルパー接続中' : 'ヘルパー未接続'));
   $('hbanner').hidden = helper.connected;
   $('hver').textContent = helper.connected ? `${helper.version}（${helper.os}/${helper.arch}）` : '—';
-  await checkAccess();
+  invalidate('dests');
 }
 $('reconnect').onclick = async () => {
   await checkHelper();
@@ -73,15 +129,17 @@ $('reconnect').onclick = async () => {
 };
 
 /** 保存先に今アクセスできるか（ヘルパーで確認） */
+// 確認できなかったときは null（「見つかりません」と区別する）
 async function checkAccess() {
-  access = {};
+  const seq = ++accessSeq;
   const paths = S.dests.map((d) => d.paths?.[os]).filter(Boolean);
+  let result = {};
   if (helper.connected && paths.length) {
-    try {
-      access = (await call('checkPaths', { paths })).result || {};
-    } catch {}
+    result = await call('checkPaths', { paths }).then((r) => r.result || null, () => null);
   }
-  renderDests();
+  if (seq !== accessSeq) return; // 新しい確認が始まっていたら古い結果は使わない
+  access = result;
+  invalidate('dests');
 }
 
 /* ---------- ルール ---------- */
@@ -91,6 +149,7 @@ function renderRules() {
   const el = $('rules');
   const q = $('q').value.trim().toLowerCase();
   const list = S.rules.filter((r) => r.domain.includes(q)).sort((a, b) => a.domain.localeCompare(b.domain));
+  const byId = destIndex();
   if (!S.rules.length) {
     el.innerHTML = `<div class="empty">${ILLUST}<h3>まだルールがありません</h3>
       <p>よく使うサイトを登録すると、そのサイトのダウンロードだけ<br>指定したフォルダに自動で保存されます。</p>
@@ -103,7 +162,7 @@ function renderRules() {
   }
   el.innerHTML = list
     .map((r) => {
-      const d = S.dests.find((x) => x.id === r.destId);
+      const d = byId.get(r.destId);
       return `<div class="card rule${r.enabled ? '' : ' disabled'}" data-id="${esc(r.id)}">
         ${fav(r.domain)}
         <div class="info"><div class="dom">${esc(r.domain)}</div><div class="mode">${r.includeSubdomains ? 'サブドメインも含む' : '完全一致のみ'}</div></div>
@@ -118,19 +177,28 @@ function renderRules() {
 $('rules').addEventListener('click', async (e) => {
   const card = e.target.closest('.rule');
   if (!card) return;
-  const i = S.rules.findIndex((r) => r.id === card.dataset.id);
-  const r = S.rules[i];
+  const id = card.dataset.id;
+  const r = S.rules.find((x) => x.id === id);
   if (!r) return;
   if (e.target.closest('[data-sw]')) {
-    r.enabled = !r.enabled;
-    await saveRules(S.rules);
-  } else if (e.target.closest('[data-del]')) {
-    S.rules.splice(i, 1);
-    await saveRules(S.rules);
-    toast(`「${r.domain}」を削除しました`, '元に戻す', async () => {
-      S.rules.splice(Math.min(i, S.rules.length), 0, r);
-      await saveRules(S.rules);
+    await updateRules((rules) => {
+      const x = rules.find((y) => y.id === id);
+      if (!x) return false;
+      x.enabled = !x.enabled;
     });
+  } else if (e.target.closest('[data-del]')) {
+    let at = -1;
+    await updateRules((rules) => {
+      at = rules.findIndex((y) => y.id === id);
+      if (at < 0) return false;
+      rules.splice(at, 1);
+    });
+    toast(`「${r.domain}」を削除しました`, '元に戻す', () =>
+      updateRules((rules) => {
+        if (rules.some((y) => y.id === id || y.domain === r.domain)) return false;
+        rules.splice(Math.min(Math.max(at, 0), rules.length), 0, r);
+      }),
+    );
   } else if (e.target.closest('[data-edit]')) {
     ruleModal(r);
   }
@@ -171,11 +239,17 @@ function ruleModal(rule) {
   const save = async () => {
     const domain = normalizeDomain($('m-dom').value);
     if (!domain) return ($('m-err').textContent = 'ドメインを正しく入力してください（例：drive.google.com）');
-    if (S.rules.some((r) => r.domain === domain && r !== rule)) return ($('m-err').textContent = `「${domain}」のルールはすでにあります`);
     const data = { domain, destId, includeSubdomains: isOn($('m-sub')) };
-    if (rule) Object.assign(rule, data);
-    else S.rules.push({ id: newId(), enabled: true, ...data });
-    await saveRules(S.rules);
+    // 保存の直前に最新のルールで確かめる（ダイアログを開いている間に別の画面で変わっていることがある）
+    let err = '';
+    await updateRules((rules) => {
+      if (rules.some((r) => r.domain === domain && r.id !== rule?.id)) return void (err = `「${domain}」のルールはすでにあります`), false;
+      if (!rule) return void rules.push({ id: newId(), enabled: true, ...data });
+      const x = rules.find((r) => r.id === rule.id);
+      if (!x) return void (err = 'このルールは別の画面で削除されました'), false;
+      Object.assign(x, data);
+    });
+    if (err) return ($('m-err').textContent = err);
     closeModal();
     toast(rule ? 'ルールを更新しました' : `「${domain}」を追加しました`);
   };
@@ -192,14 +266,15 @@ function renderDests() {
       <button class="btn primary" data-add-dest>${svg('plus')}保存先を追加</button></div>`;
     return;
   }
+  const counts = ruleCounts();
   el.innerHTML = S.dests
     .map((d) => {
       const k = destKind(d, os);
-      const used = S.rules.filter((r) => r.destId === d.id).length;
+      const used = counts.get(d.id) || 0;
       const cur = d.paths?.[os];
       const st = !cur
         ? '<span class="dot"></span>この PC は未設定'
-        : !helper.connected
+        : !helper.connected || !access || !(cur in access)
           ? '<span class="dot"></span>確認できません'
           : access[cur]
             ? '<span class="dot ok"></span>アクセス可'
@@ -221,19 +296,25 @@ function renderDests() {
 $('dests').addEventListener('click', async (e) => {
   const card = e.target.closest('.dest-card');
   if (!card) return;
-  const i = S.dests.findIndex((d) => d.id === card.dataset.id);
-  const d = S.dests[i];
+  const id = card.dataset.id;
+  const d = S.dests.find((x) => x.id === id);
   if (!d) return;
   if (e.target.closest('[data-edit]')) return destModal(d);
   if (e.target.closest('[data-del]')) {
-    const used = S.rules.filter((r) => r.destId === d.id).length;
+    const used = ruleCounts().get(id) || 0;
     if (used) return toast(`ルール ${used} 件で使われているため削除できません`);
-    S.dests.splice(i, 1);
-    await saveDests(S.dests);
-    toast(`「${d.name}」を削除しました`, '元に戻す', async () => {
-      S.dests.splice(Math.min(i, S.dests.length), 0, d);
-      await saveDests(S.dests);
+    let at = -1;
+    await updateDests((dests) => {
+      at = dests.findIndex((x) => x.id === id);
+      if (at < 0) return false;
+      dests.splice(at, 1);
     });
+    toast(`「${d.name}」を削除しました`, '元に戻す', () =>
+      updateDests((dests) => {
+        if (dests.some((x) => x.id === id)) return false;
+        dests.splice(Math.min(Math.max(at, 0), dests.length), 0, d);
+      }),
+    );
   }
 });
 
@@ -251,12 +332,14 @@ function destModal(dest) {
     <div class="err" id="m-err"></div>
     <div class="foot"><button class="btn ghost" data-close>キャンセル</button><button class="btn primary" id="m-save">保存</button></div>`);
   $('m-name').focus();
+  const gen = modalGen;
+  const alive = () => gen === modalGen; // まだこのダイアログが開いているか
   if (helper.connected) {
     // マウント中の場所（Googleドライブ・Dropbox・外付けなど）を候補として出す
     call('listVolumes')
       .then((r) => {
         const vols = r.volumes || [];
-        if (!vols.length) return;
+        if (!vols.length || !alive()) return;
         $('m-vols').innerHTML =
           '<span class="small muted" style="width:100%">マウント中の場所</span>' +
           vols
@@ -277,13 +360,14 @@ function destModal(dest) {
     $('m-hint').textContent = 'フォルダ選択のウィンドウを開きました（Brave の後ろに出ることがあります）';
     try {
       const r = await call('pickFolder', { startDir: start || '' });
+      if (!alive()) return; // 選んでいる間にダイアログが閉じられた
       if (r.path) {
         $('m-cur').value = r.path;
         if (!$('m-name').value.trim()) $('m-name').value = r.path.split(/[\\/]/).filter(Boolean).pop() || '';
       }
       $('m-hint').textContent = '';
     } catch (e) {
-      $('m-hint').textContent = 'フォルダを選べませんでした：' + e.message;
+      if (alive()) $('m-hint').textContent = 'フォルダを選べませんでした：' + e.message;
     }
   }
   $('m-save').onclick = async () => {
@@ -292,14 +376,18 @@ function destModal(dest) {
     const oth = $('m-oth').value.trim();
     if (!name) return ($('m-err').textContent = '名前を入力してください');
     if (!cur && !oth) return ($('m-err').textContent = 'フォルダを 1 つ以上入力してください');
-    if (S.dests.some((d) => d.name === name && d !== dest)) return ($('m-err').textContent = '同じ名前の保存先があります');
     const paths = { [os]: cur, [other]: oth };
-    if (dest) Object.assign(dest, { name, paths });
-    else S.dests.push({ id: newId(), name, paths });
-    await saveDests(S.dests);
+    let err = '';
+    await updateDests((dests) => {
+      if (dests.some((d) => d.name === name && d.id !== dest?.id)) return void (err = '同じ名前の保存先があります'), false;
+      if (!dest) return void dests.push({ id: newId(), name, paths });
+      const x = dests.find((d) => d.id === dest.id);
+      if (!x) return void (err = 'この保存先は別の画面で削除されました'), false;
+      Object.assign(x, { name, paths });
+    });
+    if (err) return ($('m-err').textContent = err);
     closeModal();
     toast(dest ? '保存先を更新しました' : `「${name}」を追加しました`);
-    checkAccess();
   };
 }
 
@@ -328,11 +416,12 @@ function renderHistory() {
       <p style="margin:0">登録したサイトからダウンロードすると、ここに表示されます。</p></div>`;
     return;
   }
+  const byId = destIndex();
   $('history').innerHTML = `<div class="card table"><table>
     <thead><tr><th>ファイル</th><th>サイト</th><th>保存先</th><th>結果</th><th>日時</th></tr></thead><tbody>${list
       .map((h) => {
         const ok = h.status === 'ok';
-        const d = S.dests.find((x) => x.id === h.destId) || { name: h.destName, paths: {} };
+        const d = byId.get(h.destId) || { name: h.destName, paths: {} };
         const note = ok ? (h.renamed ? `同名ファイルがあったため「${h.renamed}」で保存` : '') : h.reason + '（ダウンロードフォルダに残しました）';
         return `<tr data-path="${esc(h.path)}" title="フォルダを開く"><td class="fn-cell"><div class="fn">${esc(h.filename)}</div>${note ? `<div class="reason">${esc(note)}</div>` : ''}</td>
           <td class="muted">${esc(h.site || '')}</td><td>${chip(d, os)}</td>
@@ -382,7 +471,6 @@ $('file').onchange = async () => {
     await chrome.storage.local.set({ rules: merged.rules, dests: merged.dests });
     closeModal();
     toast('読み込みました');
-    checkAccess();
   };
   openModal(`<h3 id="mtitle">バックアップを読み込みますか？</h3>
     <p class="muted" style="margin:0 0 6px">ルール ${p.added} 件を追加し、保存先 ${p.dests} 件を反映します。</p>
@@ -410,13 +498,17 @@ document.addEventListener('keydown', (e) => {
 
 let lastFocus;
 function openModal(html) {
+  modalGen++;
   lastFocus = document.activeElement;
+  $('side').inert = $('main').inert = true; // 背面をキーボードで触れないようにする
   $('mbox').innerHTML = html;
   $('modal').hidden = false;
   const first = $('mbox').querySelector('input,button.primary');
   first?.focus();
 }
 function closeModal() {
+  modalGen++;
+  $('side').inert = $('main').inert = false;
   $('modal').hidden = true;
   $('mbox').innerHTML = '';
   lastFocus?.focus?.();

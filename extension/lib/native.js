@@ -10,18 +10,51 @@ export class HelperError extends Error {
   }
 }
 
-/** ヘルパーにコマンドを送る。失敗時は HelperError（code: NOT_CONNECTED / ヘルパー側のコード）。 */
-export async function call(cmd, args = {}) {
-  let res;
+/**
+ * ヘルパーに 1 回だけつないで、続けて何個でもコマンドを送る。
+ * connectNative の接続中はサービスワーカーが止まらないので、大きいファイルのコピーでも途中で切れない。
+ * fn が終わったら切断し、ヘルパーは終了する（常駐しない）。
+ */
+export async function session(fn) {
+  let port;
   try {
-    res = await chrome.runtime.sendNativeMessage(HOST_NAME, { cmd, ...args });
+    port = chrome.runtime.connectNative(HOST_NAME);
   } catch (e) {
     throw new HelperError('NOT_CONNECTED', e?.message || 'ヘルパーに接続できません');
   }
+  const waiting = []; // ヘルパーは届いた順に 1 つずつ返す
+  let closed = null;
+  port.onMessage.addListener((m) => waiting.shift()?.resolve(m));
+  port.onDisconnect.addListener(() => {
+    closed = new HelperError('NOT_CONNECTED', chrome.runtime.lastError?.message || 'ヘルパーとの接続が切れました');
+    while (waiting.length) waiting.shift().reject(closed);
+  });
+  const send = (cmd, args = {}) =>
+    new Promise((resolve, reject) => {
+      if (closed) return reject(closed);
+      waiting.push({ resolve, reject });
+      try {
+        port.postMessage({ cmd, ...args });
+      } catch (e) {
+        waiting.pop();
+        reject(new HelperError('NOT_CONNECTED', e?.message || 'ヘルパーに送れません'));
+      }
+    }).then(check);
+  try {
+    return await fn(send);
+  } finally {
+    if (!closed) port.disconnect();
+  }
+}
+
+function check(res) {
   if (!res) throw new HelperError('NOT_CONNECTED', 'ヘルパーから応答がありません');
   if (!res.ok) throw new HelperError(res.code || 'ERROR', res.message || '不明なエラー');
   return res;
 }
+
+/** コマンドを 1 つだけ送る。失敗時は HelperError（code: NOT_CONNECTED / ヘルパー側のコード）。 */
+export const call = (cmd, args = {}) => session((send) => send(cmd, args));
 
 /** 接続確認。{ connected, version, os, arch } */
 export async function ping() {

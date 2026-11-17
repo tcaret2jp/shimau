@@ -90,6 +90,9 @@ test('バックアップ：不正なファイル', () => {
     JSON.stringify({ format: 'shimau', rules: [{ domain: 'a b', destId: 'd' }, { domain: 'ok.com', destId: 'missing' }], dests: [{ id: 'd', name: 'x' }] }),
   );
   assert.equal(bad.rules.length, 0);
+  // 同じ id の保存先が複数あるファイルは受け付けない
+  const dup = { format: 'shimau', rules: [], dests: [{ id: 'd', name: 'a' }, { id: 'd', name: 'b' }] };
+  assert.throws(() => parseImport(JSON.stringify(dup)), /重複/);
 });
 
 test('バックアップ：取り込み（OS 別パスを消さない・上書き選択）', () => {

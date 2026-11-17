@@ -8,7 +8,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 )
 
 // app はヘルパーの設定（保存先の許可リストと、移動元として認めるダウンロードフォルダ）
@@ -113,7 +115,8 @@ func (a *app) move(src, destDir string) (string, error) {
 	if !ok {
 		return "", errc("SRC_NOT_ALLOWED", "ダウンロードフォルダの外のファイルです: %s", src)
 	}
-	// 以降は解決済みのパスで操作する（確認後にフォルダを差し替えられても外のファイルを動かさない）
+	// 以降は解決済みのパスで操作する（確認とリンク差し替えの間のずれを小さくするため。
+	// 同じ PC で同時にフォルダを差し替える攻撃までは完全には防げない）
 	src = realSrc
 
 	dest := expandHome(destDir)
@@ -131,7 +134,8 @@ func (a *app) move(src, destDir string) (string, error) {
 	}
 
 	base := filepath.Base(src)
-	for i := 0; i < 1000; i++ {
+	// 同じドライブ内：上書きしない名前変更（一瞬で終わる）
+	for i := 0; i < maxNumber; i++ {
 		dst := filepath.Join(dest, numbered(base, i))
 		err := renameNoReplace(src, dst)
 		switch {
@@ -140,19 +144,148 @@ func (a *app) move(src, destDir string) (string, error) {
 		case errors.Is(err, errExists):
 			continue
 		case errors.Is(err, errCrossDevice):
-			err = copyThenRemove(src, dst, fi)
-			if errors.Is(err, errExists) {
-				continue
-			}
-			if err != nil {
-				return "", err
-			}
-			return dst, nil
+			return copyAcross(src, dest, base, fi)
 		default:
 			return "", errc("COPY_FAILED", "%v", err)
 		}
 	}
 	return "", errc("COPY_FAILED", "空いているファイル名が見つかりません")
+}
+
+const maxNumber = 1000
+
+// copyAcross は別ドライブへの移動：保存先に隠しの一時ファイルとしてコピー → サイズを検証 →
+// 空いている名前に付け替え → 元を削除。途中で止まっても、壊れたファイルが完成品の名前で残らない。
+func copyAcross(src, dest, base string, fi fs.FileInfo) (string, error) {
+	cleanStaleParts(dest)
+	tmp, in, err := copyToTemp(src, dest, fi)
+	if err != nil {
+		return "", err
+	}
+	defer in.Close()
+	for i := 0; i < maxNumber; i++ {
+		dst := filepath.Join(dest, numbered(base, i))
+		err := placeNoReplace(tmp, dst)
+		if errors.Is(err, errExists) {
+			continue
+		}
+		if err != nil {
+			os.Remove(tmp)
+			return "", errc("COPY_FAILED", "%v", err)
+		}
+		removeSource(src, in)
+		return dst, nil
+	}
+	os.Remove(tmp)
+	return "", errc("COPY_FAILED", "空いているファイル名が見つかりません")
+}
+
+const partPrefix = ".shimau-"
+const partSuffix = ".part"
+
+// copyToTemp は src を保存先フォルダ内の一時ファイルにコピーする。開いたままの src も返す（削除前の本人確認用）
+func copyToTemp(src, dest string, srcInfo fs.FileInfo) (string, *os.File, error) {
+	in, err := os.Open(src)
+	if err != nil {
+		return "", nil, errc("SRC_NOT_FOUND", "%v", err)
+	}
+	out, err := os.CreateTemp(dest, partPrefix+"*"+partSuffix)
+	if err != nil {
+		in.Close()
+		return "", nil, errc("COPY_FAILED", "%v", err)
+	}
+	tmp := out.Name()
+	fail := func(e error) (string, *os.File, error) {
+		out.Close()
+		os.Remove(tmp) // 途中までのファイルは残さない
+		in.Close()
+		return "", nil, e
+	}
+	if err := copyData(out, in); err != nil {
+		return fail(errc("COPY_FAILED", "%v", err))
+	}
+	if err := out.Sync(); err != nil {
+		return fail(errc("COPY_FAILED", "%v", err))
+	}
+	if err := out.Close(); err != nil {
+		return fail(errc("COPY_FAILED", "%v", err))
+	}
+	di, err := os.Stat(tmp)
+	if err != nil {
+		return fail(errc("COPY_FAILED", "%v", err))
+	}
+	if di.Size() != srcInfo.Size() {
+		return fail(errc("COPY_FAILED", "コピー後のサイズが一致しません (%d != %d)", di.Size(), srcInfo.Size()))
+	}
+	_ = os.Chmod(tmp, 0o644) // CreateTemp は 0600 で作るので、普通のファイルと同じにする
+	_ = os.Chtimes(tmp, srcInfo.ModTime(), srcInfo.ModTime())
+	return tmp, in, nil
+}
+
+// copyData は大きめのバッファでコピーする（外付け・クラウドのフォルダで速くなる。Linux はカーネルのコピーを使う）
+func copyData(dst *os.File, src *os.File) error {
+	if runtime.GOOS == "linux" {
+		_, err := io.Copy(dst, src)
+		return err
+	}
+	_, err := io.CopyBuffer(struct{ io.Writer }{dst}, struct{ io.Reader }{src}, make([]byte, 1<<20))
+	return err
+}
+
+// placeNoReplace は一時ファイルを最終的な名前に付け替える（同じフォルダ内なので一瞬）。
+// 「上書きしない名前変更」もハードリンクも使えないファイルシステム（exFAT など）では、
+// 先に O_EXCL で空のファイルを作って名前を確保し、それを一時ファイルで置き換える
+// （ほかのプロセスが同じ名前で作ったファイルを上書きしないため）。
+func placeNoReplace(tmp, dst string) error {
+	err := renameNoReplace(tmp, dst)
+	if !errors.Is(err, errCrossDevice) {
+		return err
+	}
+	f, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if errors.Is(err, fs.ErrExist) {
+		return errExists
+	}
+	if err != nil {
+		return err
+	}
+	f.Close()
+	if err := os.Rename(tmp, dst); err != nil {
+		os.Remove(dst)
+		return err
+	}
+	return nil
+}
+
+// removeSource はコピーした元ファイルを消す。コピー中に同じ名前の別ファイルに差し替えられていたら消さない。
+func removeSource(src string, opened *os.File) {
+	of, err1 := opened.Stat()
+	cur, err2 := os.Lstat(src)
+	opened.Close() // Windows では開いたままだと消せない
+	if err1 != nil || err2 != nil || !os.SameFile(of, cur) {
+		fmt.Fprintf(os.Stderr, "shimau-helper: 元ファイルが変わっていたため削除しませんでした: %s\n", src)
+		return
+	}
+	if err := os.Remove(src); err != nil {
+		// コピーは成功しているので失敗扱いにはしない（元ファイルが残るだけ）
+		fmt.Fprintf(os.Stderr, "shimau-helper: 元ファイルを削除できませんでした: %v\n", err)
+	}
+}
+
+// cleanStaleParts は、前回強制終了されたときに残った一時ファイル（1 日以上前のもの）を片付ける
+func cleanStaleParts(dir string) {
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	for _, e := range ents {
+		n := e.Name()
+		if !strings.HasPrefix(n, partPrefix) || !strings.HasSuffix(n, partSuffix) || !e.Type().IsRegular() {
+			continue
+		}
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > 24*time.Hour {
+			os.Remove(filepath.Join(dir, n))
+		}
+	}
 }
 
 var (
@@ -166,57 +299,17 @@ func numbered(base string, i int) string {
 		return base
 	}
 	ext := filepath.Ext(base)
+	// "archive.tar.gz" → "archive (1).tar.gz"（ブラウザと同じ付け方）
+	for _, e := range []string{".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst"} {
+		if len(base) > len(e) && strings.EqualFold(base[len(base)-len(e):], e) {
+			ext = base[len(base)-len(e):]
+		}
+	}
 	stem := strings.TrimSuffix(base, ext)
 	if stem == "" { // ".bashrc" のような名前
 		stem, ext = base, ""
 	}
 	return fmt.Sprintf("%s (%d)%s", stem, i, ext)
-}
-
-// copyThenRemove は別ドライブへの移動：コピー → サイズを検証 → 元を削除
-func copyThenRemove(src, dst string, srcInfo fs.FileInfo) (err error) {
-	in, err := os.Open(src)
-	if err != nil {
-		return errc("SRC_NOT_FOUND", "%v", err)
-	}
-	defer in.Close()
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-	if errors.Is(err, fs.ErrExist) {
-		return errExists
-	}
-	if err != nil {
-		return errc("COPY_FAILED", "%v", err)
-	}
-	defer func() {
-		if err != nil {
-			out.Close()
-			os.Remove(dst) // 途中までのファイルは残さない
-		}
-	}()
-	if _, err = io.Copy(out, in); err != nil {
-		return errc("COPY_FAILED", "%v", err)
-	}
-	if err = out.Sync(); err != nil {
-		return errc("COPY_FAILED", "%v", err)
-	}
-	if err = out.Close(); err != nil {
-		return errc("COPY_FAILED", "%v", err)
-	}
-	di, err := os.Stat(dst)
-	if err != nil {
-		return errc("COPY_FAILED", "%v", err)
-	}
-	if di.Size() != srcInfo.Size() {
-		err = errc("COPY_FAILED", "コピー後のサイズが一致しません (%d != %d)", di.Size(), srcInfo.Size())
-		return err
-	}
-	_ = os.Chtimes(dst, srcInfo.ModTime(), srcInfo.ModTime())
-	in.Close()
-	if rmErr := os.Remove(src); rmErr != nil {
-		// コピーは成功しているので失敗扱いにはしない（元ファイルが残るだけ）
-		fmt.Fprintf(os.Stderr, "shimau-helper: 元ファイルを削除できませんでした: %v\n", rmErr)
-	}
-	return nil
 }
 
 // inDownloads は src（シンボリックリンクを解決したパス）がダウンロードフォルダの中にあるかを調べ、
@@ -270,8 +363,8 @@ func containsExact(list []string, p string) bool {
 }
 
 // expandHome は先頭の ~ をホームフォルダに置き換える
+// （前後の空白は消さない。"report.pdf " のような名前のファイルも別物として扱うため）
 func expandHome(p string) string {
-	p = strings.TrimSpace(p)
 	if p == "~" || strings.HasPrefix(p, "~/") || strings.HasPrefix(p, `~\`) {
 		if h, err := os.UserHomeDir(); err == nil {
 			return filepath.Join(h, p[1:])

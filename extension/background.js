@@ -1,7 +1,7 @@
 // バックグラウンド：ダウンロードを監視し、ルールに一致したものだけ完了後にヘルパーで移動する
 import { findRule, pickSourceHost } from './lib/domain.js';
-import { load, addHistory, currentOs } from './lib/store.js';
-import { call, reasonText } from './lib/native.js';
+import { loadConfig, addHistory, currentOs } from './lib/store.js';
+import { call, session, reasonText } from './lib/native.js';
 
 // ダウンロード開始時の判定結果。小さいファイルは判定より先に完了することがあるので Promise で持つ。
 // サービスワーカーが眠っても続きができるよう、storage.session にも保存する。
@@ -19,7 +19,7 @@ chrome.downloads.onCreated.addListener((item) => {
 });
 
 async function decide(item) {
-  const { rules, dests } = await load();
+  const { rules, dests } = await loadConfig();
   if (!rules.some((r) => r.enabled)) return null;
   let tabUrl = null;
   if (!item.referrer) {
@@ -50,21 +50,33 @@ async function forget(id) {
   await chrome.storage.session.remove(pendingKey(id));
 }
 
-async function takeDecision(id) {
+async function getDecision(id) {
   let d = decisions.has(id) ? await decisions.get(id) : undefined;
   if (d === undefined) d = (await chrome.storage.session.get(pendingKey(id)))[pendingKey(id)];
-  await forget(id);
   return d || null;
 }
 
+const running = new Set(); // 同じダウンロードを二重に処理しない
+
 async function handleComplete(id) {
-  const decision = await takeDecision(id);
-  if (!decision) return;
+  if (running.has(id)) return;
+  running.add(id);
+  try {
+    const decision = await getDecision(id);
+    if (decision) await processDownload(id, decision);
+  } finally {
+    // 判定は処理が終わってから消す（途中でサービスワーカーが止まっても記録が残るように）
+    running.delete(id);
+    await forget(id);
+  }
+}
+
+async function processDownload(id, decision) {
   const [item] = await chrome.downloads.search({ id });
   if (!item?.filename) return;
   const src = item.filename;
   const name = basename(src);
-  const { dests } = await load();
+  const { dests } = await loadConfig();
   const dest = dests.find((d) => d.id === decision.destId);
   if (!dest) return;
   const os = await currentOs();
@@ -89,14 +101,17 @@ async function handleComplete(id) {
   });
 }
 
-async function moveWithSync(src, destDir) {
-  try {
-    return await call('move', { src, destDir });
-  } catch (e) {
-    if (e.code !== 'DEST_NOT_ALLOWED') throw e;
-    await syncDestinations(); // 保存先の許可リストが古い → 送り直して1回だけ再試行
-    return await call('move', { src, destDir });
-  }
+// 1 回の接続で「移動 →（許可リストが古ければ）同期 → 再移動」まで済ませる
+function moveWithSync(src, destDir) {
+  return session(async (send) => {
+    try {
+      return await send('move', { src, destDir });
+    } catch (e) {
+      if (e.code !== 'DEST_NOT_ALLOWED') throw e;
+      await send('syncDestinations', { paths: await destPaths() });
+      return await send('move', { src, destDir });
+    }
+  });
 }
 
 async function fail(base, src, code, detail) {
@@ -132,11 +147,12 @@ chrome.notifications.onClicked.addListener((nid) => openFromNotification(nid));
 chrome.notifications.onClosed.addListener((nid) => chrome.storage.session.remove(notifKey(nid)));
 
 // 保存先の許可リストをヘルパーに同期する（ヘルパーは登録済みの保存先にしか移動しない）
+async function destPaths() {
+  const [{ dests }, os] = await Promise.all([loadConfig(), currentOs()]);
+  return dests.map((d) => d.paths?.[os]).filter(Boolean);
+}
 async function syncDestinations() {
-  const { dests } = await load();
-  const os = await currentOs();
-  const paths = dests.map((d) => d.paths?.[os]).filter(Boolean);
-  await call('syncDestinations', { paths });
+  await call('syncDestinations', { paths: await destPaths() });
 }
 const syncQuietly = () => syncDestinations().catch(() => {});
 

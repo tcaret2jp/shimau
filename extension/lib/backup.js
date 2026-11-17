@@ -32,6 +32,8 @@ export function parseImport(text) {
       paths: { mac: str(d.paths?.mac), win: str(d.paths?.win) },
     }));
   const destIds = new Set(dests.map((d) => d.id));
+  // 同じ id の保存先が複数あると、ルールの行き先が黙って変わってしまうので受け付けない
+  if (destIds.size !== dests.length) throw new Error('保存先の id が重複しています（ファイルが壊れている可能性があります）');
   const rules = [];
   for (const r of data.rules) {
     const domain = normalizeDomain(r?.domain);
