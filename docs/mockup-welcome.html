@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shimau はじめての設定（モック）</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f5f7; --surface:#ffffff; --surface-2:#f2f2f5; --hover:#eaeaee;
+  --border:#e2e2e7; --text:#1d1d1f; --text-2:#6e6e73; --text-3:#9a9aa0;
+  --accent:#f0532b; --accent-hover:#d9461f; --accent-soft:rgba(240,83,43,.11);
+  --ok:#2fb350; --ng:#e5483d; --warn:#e8930c;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.08);
+  --r:12px;
+}
+:root[data-theme="dark"]{
+  --bg:#161618; --surface:#1f1f22; --surface-2:#28282c; --hover:#2f2f34;
+  --border:#34343a; --text:#f2f2f5; --text-2:#a3a3aa; --text-3:#74747b;
+  --accent:#ff6a3d; --accent-hover:#ff825c; --accent-soft:rgba(255,106,61,.15);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans","Yu Gothic UI","Segoe UI",Meiryo,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+svg{display:block}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+
+/* モック操作バー（実装には含まれない） */
+.mockbar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px 16px;background:#2b2b30;color:#ddd;font-size:12px}
+.mockbar b{color:#fff;margin-right:4px}
+.seg{display:inline-flex;background:rgba(255,255,255,.1);border-radius:8px;padding:2px}
+.seg button{border:0;background:none;padding:3px 10px;border-radius:6px;font-size:12px;color:#ccc}
+.seg button.on{background:#fff;color:#111}
+
+.wrap{max-width:640px;margin:0 auto;padding:44px 16px 64px}
+.hero{text-align:center;margin-bottom:28px}
+.logo{width:52px;height:52px;border-radius:15px;background:var(--accent);display:grid;place-items:center;color:#fff;margin:0 auto 14px}
+.logo svg{width:28px;height:28px}
+h1{font-size:24px;margin:0 0 6px;letter-spacing:.01em}
+.lead{color:var(--text-2);margin:0}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.steps{list-style:none;margin:0;padding:0}
+.step{display:flex;gap:14px;padding:18px 20px;border-top:1px solid var(--border)}
+.step:first-child{border-top:0}
+.num{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--surface-2);color:var(--text-2)}
+.num svg{width:15px;height:15px}
+.step.done .num{background:var(--ok);color:#fff}
+.step.now .num{background:var(--accent);color:#fff}
+.step.done .body h3{color:var(--text-2)}
+.body{flex:1;min-width:0}
+.body h3{margin:3px 0 4px;font-size:15px}
+.body p{margin:0;color:var(--text-2);font-size:13px}
+.actions{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.btn{white-space:nowrap;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:background .2s}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.ghost:hover{background:var(--hover)}
+.btn.text{background:none;color:var(--accent);padding:6px 4px}
+
+.cmd{margin-top:10px;display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:9px;padding:8px 8px 8px 12px}
+.cmd code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap}
+.copy{border:0;background:var(--surface);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:600;display:inline-flex;gap:5px;align-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.copy svg{width:13px;height:13px}
+.hint{margin-top:8px;font-size:12px;color:var(--text-3)}
+
+.status{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:color-mix(in srgb,var(--ok) 70%,var(--text))}
+.status.ok svg{width:16px;height:16px}
+
+.foot{text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-3)}
+.foot a{color:var(--text-2)}
+.note{max-width:640px;margin:28px auto 0;padding:14px 16px;border:1px dashed var(--border);border-radius:var(--r);font-size:12.5px;color:var(--text-2)}
+.note h4{margin:0 0 6px;font-size:13px;color:var(--text)}
+.note ul{margin:0;padding-left:18px}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <span><b>OS</b><span class="seg" data-k="os"><button class="on" data-v="mac">Mac</button><button data-v="win">Windows</button></span></span>
+  <span><b>ヘルパー</b><span class="seg" data-k="st"><button class="on" data-v="wait">未接続</button><button data-v="ok">接続できた</button></span></span>
+  <span><b>テーマ</b><span class="seg" data-k="theme"><button class="on" data-v="light">ライト</button><button data-v="dark">ダーク</button></span></span>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+    <h1>shimau へようこそ</h1>
+    <p class="lead">あと 2 ステップで、ダウンロードの自動振り分けが使えます。</p>
+  </div>
+
+  <ol class="card steps">
+    <li class="step done">
+      <div class="num" data-check></div>
+      <div class="body"><h3>拡張機能を入れる</h3><p>完了しました。</p></div>
+    </li>
+
+    <li class="step now" id="s2">
+      <div class="num">2</div>
+      <div class="body">
+        <h3>ヘルパーを入れる</h3>
+        <p>ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。管理者権限も不要です。</p>
+
+        <div class="actions">
+          <a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-os="mac">Mac 用をダウンロード</span><span data-os="win" hidden>Windows 用をダウンロード</span></a>
+          <span class="hint" style="margin:0">shimau-helper-<span data-os="mac">mac</span><span data-os="win" hidden>windows</span>.zip</span>
+        </div>
+
+        <p style="margin-top:14px" data-os="mac">ダウンロードが終わったら、<b>ターミナル</b>を開いて次のコマンドを貼り付けて実行してください。</p>
+        <p style="margin-top:14px" data-os="win" hidden>ダウンロードが終わったら、<b>PowerShell</b> を開いて次のコマンドを貼り付けて実行してください。</p>
+        <div class="cmd">
+          <code data-os="mac">cd ~/Downloads &amp;&amp; unzip -o shimau-helper-mac.zip -d shimau-helper &amp;&amp; bash shimau-helper/install.sh</code>
+          <code data-os="win" hidden>try { cd ~\Downloads -ErrorAction Stop; Expand-Archive -Force shimau-helper-windows.zip shimau-helper -ErrorAction Stop; powershell -ExecutionPolicy Bypass -File .\shimau-helper\install.ps1 } catch { Write-Host $_ -ForegroundColor Red }</code>
+          <button class="copy" id="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>コピー</span></button>
+        </div>
+        <div class="hint" data-os="mac">ターミナルは Spotlight（⌘ + スペース）で「ターミナル」と入力すると開けます。</div>
+        <div class="hint" data-os="win" hidden>PowerShell はスタートメニューで「PowerShell」と入力すると開けます。</div>
+
+        <div class="status" id="wait"><div class="spin"></div><span>ヘルパーの接続を待っています… インストールが終わると自動で次へ進みます。</span></div>
+        <div class="status ok" id="okmsg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>ヘルパーとつながりました（v0.1.0）</span></div>
+        <div class="hint" id="trouble">うまくいかないときは、Brave を一度終了して開き直してください。</div>
+      </div>
+    </li>
+
+    <li class="step" id="s3">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>最初のルールを作る</h3>
+        <p>「このサイトのダウンロードは、このフォルダへ」を登録します。保存先の選択から始められます。</p>
+        <div class="actions" id="s3act" hidden>
+          <a class="btn primary" href="#">ルールを作る<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn text" href="#">バックアップから読み込む</a>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="foot">あとで設定する場合は、このタブを閉じてください。設定画面の「ヘルパー」からいつでも再開できます。</div>
+</div>
+
+<div class="note">
+  <h4>動きの説明（モック用メモ）</h4>
+  <ul>
+    <li>拡張機能を入れた直後に、このページが新しいタブで自動的に開く（初回インストール時のみ。更新時は開かない）。</li>
+    <li>OS は自動で判定し、Mac / Windows の手順だけを表示する。</li>
+    <li>「ダウンロード」は GitHub Releases の最新版 zip を直接ダウンロードする。</li>
+    <li>このページを開いている間は 2 秒ごとにヘルパーへ接続を試し、つながったら自動でステップ 3 へ進む。</li>
+    <li>ヘルパーがすでに入っている（再インストールなど）場合は、ステップ 2 を完了済みにして表示する。</li>
+  </ul>
+</div>
+
+<script>
+const state={os:'mac',st:'wait',theme:'light'};
+const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function render(){
+  document.documentElement.dataset.theme=state.theme;
+  document.querySelectorAll('[data-os]').forEach(e=>e.hidden=e.dataset.os!==state.os);
+  const ok=state.st==='ok', s2=document.getElementById('s2'), s3=document.getElementById('s3');
+  s2.classList.toggle('now',!ok); s2.classList.toggle('done',ok);
+  s3.classList.toggle('now',ok);
+  s2.querySelector('.num').innerHTML=ok?check:'2';
+  document.getElementById('wait').hidden=ok;
+  document.getElementById('trouble').hidden=ok;
+  document.getElementById('okmsg').hidden=!ok;
+  document.getElementById('s3act').hidden=!ok;
+}
+document.querySelector('[data-check]').innerHTML=check;
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  state[seg.dataset.k]=b.dataset.v; render();
+}));
+document.getElementById('copy').addEventListener('click',e=>{
+  const s=e.currentTarget.querySelector('span'); s.textContent='コピーしました'; setTimeout(()=>s.textContent='コピー',1500);
+});
+render();
+</script>
+</body>
+</html>

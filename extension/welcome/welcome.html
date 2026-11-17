@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shimau はじめての設定</title>
+<link rel="stylesheet" href="../ui/common.css">
+<link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="logo big" data-icon="route"></div>
+    <h1>shimau へようこそ</h1>
+    <p class="lead" id="lead">あと 2 ステップで、ダウンロードの自動振り分けが使えます。</p>
+  </div>
+
+  <ol class="card steps">
+    <li class="step done">
+      <div class="num" data-icon="check"></div>
+      <div class="body"><h3>拡張機能を入れる</h3><p>完了しました。</p></div>
+    </li>
+
+    <li class="step now" id="s2">
+      <div class="num" id="n2">2</div>
+      <div class="body">
+        <h3>ヘルパーを入れる</h3>
+        <p>ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。管理者権限も不要です。</p>
+
+        <div id="install">
+          <div class="actions">
+            <a class="btn primary" id="dl" href="#"><span data-icon="download"></span><span id="dl-label"></span></a>
+            <span class="hint" id="dl-file"></span>
+          </div>
+          <p class="gap" id="cmd-lead"></p>
+          <div class="cmd">
+            <code id="cmd"></code>
+            <button class="copy" id="copy"><span data-icon="copy"></span><span id="copy-label">コピー</span></button>
+          </div>
+          <div class="hint" id="cmd-hint"></div>
+        </div>
+
+        <div class="status" id="wait"><div class="spin"></div><span>ヘルパーの接続を待っています… インストールが終わると自動で次へ進みます。</span></div>
+        <div class="status ok" id="okmsg" hidden><span data-icon="check"></span><span id="ok-text">ヘルパーとつながりました</span></div>
+        <div class="hint" id="trouble">うまくいかないときは、Brave を一度終了して開き直してください。</div>
+      </div>
+    </li>
+
+    <li class="step" id="s3">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>最初のルールを作る</h3>
+        <p>「このサイトのダウンロードは、このフォルダへ」を登録します。保存先の選択から始められます。</p>
+        <div class="actions" id="s3act" hidden>
+          <a class="btn primary" href="../options/options.html#new-rule">ルールを作る<span data-icon="arrow"></span></a>
+          <a class="btn text" href="../options/options.html#backup">バックアップから読み込む</a>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="foot">あとで設定する場合は、このタブを閉じてください。設定画面の「ヘルパー」からいつでも再開できます。</div>
+</div>
+<script type="module" src="welcome.js"></script>
+</body>
+</html>

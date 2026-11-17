@@ -144,7 +144,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.dests) syncQuietly();
 });
 chrome.runtime.onStartup.addListener(syncQuietly);
-chrome.runtime.onInstalled.addListener(syncQuietly);
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  syncQuietly();
+  // 初めて入れたときだけ、はじめての設定を開く（更新時は開かない）
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    chrome.tabs.create({ url: chrome.runtime.getURL('welcome/welcome.html') });
+  }
+});
 
 function basename(p) {
   return p.split(/[\\/]/).pop();

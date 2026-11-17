@@ -10,12 +10,13 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - 実装：拡張機能・ヘルパー・インストールスクリプトまで完了（v0.1.0）。Codex レビューの指摘 6 件を修正済み
   - Pi で確認済み：単体テスト（拡張・ヘルパー）、Chromium＋ヘルパーでの通しテスト（振り分け・同名ファイルの連番・ルール OFF のときは介入しない）
   - **未確認**：Mac / Windows 実機での動作（下の「実機での確認項目」）
+- はじめての設定画面：拡張機能を初めて入れたときに自動で開き、ヘルパーのダウンロード・インストール用コマンド・接続確認を案内する（モック OK 済み → [docs/mockup-welcome.html](docs/mockup-welcome.html)）
 - GitHub：https://github.com/tcaret2jp/shimau （Public）
 
 ## 次にやること
-1. Mac / Windows 実機でインストールして動作確認（とーや）
-2. 実機で見つかった問題の修正
-3. 配布用 zip を GitHub Releases に置く
+1. 配布用 zip を GitHub Releases に置く（はじめての設定画面のダウンロードボタンはここを見る）
+2. Mac / Windows 実機でインストールして動作確認（とーや）
+3. 実機で見つかった問題の修正
 
 ## 構成
 ```
@@ -35,6 +36,7 @@ docs/             要件定義・デザインモック
 1. Brave で `brave://extensions` を開き、右上の「デベロッパーモード」を ON
 2. 「パッケージ化されていない拡張機能を読み込む」→ このリポジトリの `extension` フォルダを選ぶ
 3. 拡張機能 ID が `clnofopcnjnjgknoflaipaohdofeolng` になっていることを確認（manifest の key で固定）
+4. 「はじめての設定」タブが自動で開くので、その案内どおりにヘルパーを入れる（設定画面の「ヘルパー」からも開ける）
 
 ### 2. ヘルパー
 `helper/build.sh` で作った zip（`helper/dist/`）を展開して実行する。

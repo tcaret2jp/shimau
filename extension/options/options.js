@@ -17,8 +17,12 @@ async function init() {
   $('os-name').textContent = OS_NAME[os];
   $('extid').textContent = chrome.runtime.id;
   await reload();
+  // はじめての設定の「ルールを作る」から来たら、追加画面を開く
+  const newRule = location.hash === '#new-rule';
+  if (newRule) history.replaceState(null, '', '#rules');
   route();
   checkHelper();
+  if (newRule) ruleModal();
 }
 
 async function reload() {
