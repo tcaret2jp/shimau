@@ -7,7 +7,7 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 ## 現状（2026-11-18）
 - 要件定義：完了・承認済み → [docs/requirements.md](docs/requirements.md)
 - デザインモック：OK 済み → [docs/mockup.html](docs/mockup.html)
-- 実装：拡張機能・ヘルパーまで完了（v0.2.0、Releases は未公開）
+- 実装：拡張機能・ヘルパーまで完了（v0.2.0）
   - v0.2.0：ヘルパーを**ターミナルなしで入れられる**ように変更。ダウンロードしてダブルクリックするだけ（Mac：zip の中の「shimau ヘルパー」アプリ、Windows：`shimau-helper-setup.exe`）。初回に出る OS の警告への対処は、はじめての設定画面で絵付きで案内（モック OK 済み → [docs/mockup-welcome-v3.html](docs/mockup-welcome-v3.html)）
   - v0.1.1：Codex と Claude Code で全コードを相互レビューし、不具合と動作の重さを修正（下の「v0.1.1 の改善」）
   - Pi で確認済み：単体テスト（拡張・ヘルパー）、Chromium＋ヘルパーでの通しテスト（振り分け・同名ファイルの連番・ルール OFF のときは介入しない）
@@ -15,12 +15,11 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - はじめての設定画面：拡張機能を初めて入れたときに自動で開き、ヘルパーのダウンロード・インストール用コマンド・接続確認を案内する（モック OK 済み → [docs/mockup-welcome.html](docs/mockup-welcome.html)）
   - ヘルパーがつながると、カルーセルのチュートリアルに切り替わる：「初めて使う」→ しくみの説明 → 保存先を作る → ルールを作る → Brave の「保存場所を確認する」を OFF にする案内 → 完了。「バックアップを読み込む」を選んだ場合はその場で取り込んで完了（チュートリアルの部分のみモック v2 で OK → [docs/mockup-welcome-v2.html](docs/mockup-welcome-v2.html)。ヘルパーのインストール手順は従来のまま）
   - Brave の「ダウンロード前に各ファイルの保存場所を確認する」は拡張機能から無効にできない（API がない）。チュートリアルで OFF にするよう案内する
-- GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.1.1（ヘルパーの zip）を公開済み
+- GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.2.0（`shimau-helper-mac.zip`・`shimau-helper-setup.exe`）を公開済み
 
 ## 次にやること
-1. v0.2.0 を Releases に公開（`shimau-helper-mac.zip` と `shimau-helper-setup.exe`）。はじめての設定画面のダウンロードボタンは最新の Release を見るので、公開するまでボタンは動かない
-2. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
-3. 実機で見つかった問題の修正
+1. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
+2. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
 
 ## 構成
 ```
