@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shimau はじめての設定</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f5f7; --surface:#ffffff; --surface-2:#f2f2f5; --hover:#eaeaee;
+  --border:#e2e2e7; --text:#1d1d1f; --text-2:#6e6e73; --text-3:#9a9aa0;
+  --accent:#f0532b; --accent-hover:#d9461f; --accent-soft:rgba(240,83,43,.11);
+  --ok:#2fb350; --ng:#e5483d; --warn:#e8930c;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 28px rgba(0,0,0,.08);
+  --r:12px;
+}
+:root[data-theme="dark"]{
+  --bg:#161618; --surface:#1f1f22; --surface-2:#28282c; --hover:#2f2f34;
+  --border:#34343a; --text:#f2f2f5; --text-2:#a3a3aa; --text-3:#74747b;
+  --accent:#ff6a3d; --accent-hover:#ff825c; --accent-soft:rgba(255,106,61,.15);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Hiragino Sans","Yu Gothic UI","Segoe UI",Meiryo,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+svg{display:block}
+
+/* モック操作バー（実装には含まれない） */
+.mockbar{position:fixed;right:12px;bottom:12px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding:8px 10px;background:rgba(43,43,48,.92);color:#ddd;font-size:11px;border-radius:10px;opacity:.35;transition:opacity .2s}
+.mockbar:hover{opacity:1}
+.mockbar b{color:#fff;margin-right:4px}
+.seg{display:inline-flex;background:rgba(255,255,255,.1);border-radius:8px;padding:2px}
+.seg button{border:0;background:none;padding:3px 10px;border-radius:6px;font-size:12px;color:#ccc}
+.seg button.on{background:#fff;color:#111}
+
+.wrap{max-width:640px;margin:0 auto;padding:44px 16px 64px}
+.hero{text-align:center;margin-bottom:28px}
+.logo{width:52px;height:52px;border-radius:15px;background:var(--accent);display:grid;place-items:center;color:#fff;margin:0 auto 14px}
+.logo svg{width:28px;height:28px}
+h1{font-size:24px;margin:0 0 6px;letter-spacing:.01em}
+.lead{color:var(--text-2);margin:0}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.steps{list-style:none;margin:0;padding:0}
+.step{display:flex;gap:14px;padding:18px 20px;border-top:1px solid var(--border)}
+.step:first-child{border-top:0}
+.num{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--surface-2);color:var(--text-2)}
+.num svg{width:15px;height:15px}
+.step.done .num{background:var(--ok);color:#fff}
+.step.now .num{background:var(--accent);color:#fff}
+.step.done .body h3{color:var(--text-2)}
+.body{flex:1;min-width:0}
+.body h3{margin:3px 0 4px;font-size:15px}
+.body > p{margin:0;color:var(--text-2);font-size:13px}
+.actions{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.btn{white-space:nowrap;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:background .2s}
+.btn svg{width:15px;height:15px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.ghost:hover{background:var(--hover)}
+.btn.text{background:none;color:var(--accent);padding:6px 4px}
+.hint{margin-top:8px;font-size:12px;color:var(--text-3)}
+
+/* ヘルパーを入れる手順（小さい番号つき） */
+.sub{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:14px}
+.sub > li{display:flex;gap:12px}
+.sn{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:11.5px;font-weight:700;border:1.5px solid var(--border);color:var(--text-2);margin-top:1px}
+.sb{flex:1;min-width:0}
+.sb h4{margin:0 0 2px;font-size:13.5px}
+.sb p{margin:0;font-size:12.5px;color:var(--text-2)}
+.sb p b{color:var(--text)}
+.sb .actions{margin-top:8px}
+.once{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;vertical-align:1px}
+.fname{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--text-2)}
+
+/* OS の画面の見本（絵） */
+.shots{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:flex-start}
+.shot{flex:1 1 220px;min-width:0;background:var(--surface-2);border-radius:10px;padding:12px;position:relative}
+.shot .cap{font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:8px;display:flex;gap:6px;align-items:center}
+.shot .cap i{font-style:normal;width:16px;height:16px;border-radius:50%;background:var(--text-3);color:var(--surface);display:grid;place-items:center;font-size:10px}
+.press{box-shadow:0 0 0 2.5px var(--accent),0 0 0 6px var(--accent-soft)!important;position:relative}
+
+/* Mac の警告ダイアログ（見本） */
+.macdlg{max-width:250px!important;background:#ececec;color:#1d1d1f;border-radius:12px;padding:14px 14px 12px;text-align:center;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.18);max-width:230px;margin:0 auto}
+:root[data-theme="dark"] .macdlg{background:#323236;color:#eee}
+.macdlg .ic{width:30px;height:30px;margin:0 auto 6px;border-radius:7px;background:linear-gradient(#ffd34d,#f5a623);display:grid;place-items:center;color:#7a4b00;font-weight:900;font-size:17px}
+.macdlg b{display:block;font-size:11.5px;margin-bottom:4px}
+.macdlg .t{color:#555;line-height:1.45}
+:root[data-theme="dark"] .macdlg .t{color:#bbb}
+.macdlg .bs{display:grid;gap:5px;margin-top:10px}
+.macdlg .bs span{display:block;padding:4px;border-radius:6px;background:#fff;font-weight:600}
+:root[data-theme="dark"] .macdlg .bs span{background:#4a4a4f}
+.macdlg .bs span.def{background:#2f7cf6;color:#fff}
+
+/* Mac のシステム設定（見本） */
+.macset{background:#fff;color:#1d1d1f;border-radius:10px;padding:10px 12px;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+:root[data-theme="dark"] .macset{background:#2a2a2e;color:#eee}
+.macset .h{font-weight:700;margin-bottom:6px}
+.macset .sub2{display:flex;justify-content:space-between;gap:8px;color:#555;padding:6px 0 8px;font-size:10.5px}
+.macset .sub2 span{color:#1d1d1f;font-weight:500}
+:root[data-theme="dark"] .macset .sub2{color:#bbb}
+:root[data-theme="dark"] .macset .sub2 span{color:#eee}
+.macset .row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
+:root[data-theme="dark"] .macset .row{border-top-color:rgba(255,255,255,.1)}
+.macset .row span:first-child{color:#555;line-height:1.4}
+:root[data-theme="dark"] .macset .row span:first-child{color:#bbb}
+.macset .ob{flex:none;padding:3px 9px;border-radius:6px;background:#e8e8ed;font-weight:600}
+:root[data-theme="dark"] .macset .ob{background:#4a4a4f}
+
+/* Windows SmartScreen（見本） */
+.smart{min-height:150px;display:flex;flex-direction:column;background:#0b5cad;color:#fff;border-radius:4px;padding:12px 14px 10px;font-size:11px;font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.smart b{display:block;font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.35}
+.smart .t{opacity:.9;line-height:1.45}
+.smart .lk{align-self:flex-start;display:inline-block;margin-top:6px;text-decoration:underline;padding:1px 3px;border-radius:3px}
+.smart .kv{margin-top:6px;opacity:.85;line-height:1.5}
+.smart .bs{margin-top:auto!important;padding-top:12px;display:flex;justify-content:flex-end;gap:6px;margin-top:12px}
+.smart .bs span{padding:3px 14px;border:1px solid rgba(255,255,255,.75);border-radius:2px}
+.smart .bs span.def{background:rgba(255,255,255,.12)}
+
+/* ヘルパー：3 つのタイル */
+.flow3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.tile{position:relative;background:var(--surface-2);border-radius:10px;padding:12px 10px 12px;text-align:center;font-size:11.5px;color:var(--text-2);line-height:1.45;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tile b{color:var(--text);font-size:13px}
+.tile .tn{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.tile + .tile::before{content:"";position:absolute;left:-7px;top:50%;width:6px;height:6px;border-top:1.5px solid var(--text-3);border-right:1.5px solid var(--text-3);transform:translateY(-50%) rotate(45deg)}
+.btn.sm{padding:6px 11px;font-size:12px;margin-top:2px}
+.btn.sm svg{width:13px;height:13px}
+@media (max-width:520px){.flow3{grid-template-columns:1fr}.tile + .tile::before{display:none}.tile br{display:none}}
+
+/* 初回の警告（たたみ） */
+details.warn{margin-top:10px;border-radius:10px;background:color-mix(in srgb,var(--warn) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
+details.warn summary{list-style:none;display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer}
+details.warn summary::-webkit-details-marker{display:none}
+.wi{width:20px;height:20px;border-radius:50%;background:var(--warn);color:#fff;font-weight:900;font-size:12px;display:grid;place-items:center;flex:none}
+.wt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:11.5px;color:var(--text-2);line-height:1.4}
+.wt b{font-size:12.5px;color:var(--text)}
+.chev{color:var(--text-3);transition:transform .2s;flex:none}
+.chev svg{width:16px;height:16px}
+details.warn[open] .chev{transform:rotate(180deg)}
+.wbody{padding:2px 12px 12px}
+.wbody .shots{margin-top:0}
+.wbody .actions{margin-top:10px}
+.wbody .actions .hint{margin:0}
+
+/* 動画カード */
+.vcard{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);text-align:left;transition:background .2s}
+.vcard:hover{background:var(--surface-2)}
+.thumb{position:relative;width:112px;height:63px;border-radius:7px;overflow:hidden;flex:none;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .pl{position:absolute;left:5px;bottom:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
+.thumb .pl svg{width:11px;height:11px;margin-left:1px}
+.thumb .dur{position:absolute;right:4px;bottom:4px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:4px;padding:0 4px}
+.vt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12px;color:var(--text-2)}
+.vt b{font-size:13.5px;color:var(--text)}
+.vchev{color:var(--text-3)}
+.vchev svg{width:16px;height:16px}
+.btn.text.sm{border:0;padding:6px 4px;font-size:12px}
+.btn.text.sm svg{width:12px;height:12px}
+
+/* 警告への対処（文字の手順） */
+.wsteps{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:12.5px;color:var(--text-2)}
+.wsteps li{display:flex;gap:8px;align-items:flex-start}
+.wsteps li>span{width:18px;height:18px;border-radius:50%;background:var(--warn);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;flex:none;margin-top:1px}
+.wsteps p{margin:0}
+.wsteps b{color:var(--text)}
+
+/* 再生画面 */
+.player{border:0;padding:0;background:none;width:min(960px,calc(100vw - 32px));max-width:none;overflow:visible}
+.player::backdrop{background:rgba(0,0,0,.6)}
+.pbox{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.pbox video{display:block;width:100%;aspect-ratio:16/9;background:#fff}
+.pclose{position:absolute;top:10px;right:10px;z-index:2;width:32px;height:32px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center}
+.pclose svg{width:16px;height:16px}
+
+.status{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status.ok{background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:color-mix(in srgb,var(--ok) 70%,var(--text))}
+.status.ok svg{width:16px;height:16px}
+
+details.trouble{margin-top:10px;font-size:12px;color:var(--text-3)}
+details.trouble summary{cursor:pointer}
+details.trouble ul{margin:6px 0 0;padding-left:18px;color:var(--text-2)}
+
+.foot{text-align:center;margin-top:18px;font-size:12.5px;color:var(--text-3)}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <span><b>OS</b><span class="seg" data-k="os"><button class="on" data-v="mac">Mac</button><button data-v="win">Windows</button></span></span>
+  <span><b>ヘルパー</b><span class="seg" data-k="st"><button class="on" data-v="wait">未接続</button><button data-v="ok">接続できた</button></span></span>
+  <span><b>テーマ</b><span class="seg" data-k="theme"><button class="on" data-v="light">ライト</button><button data-v="dark">ダーク</button></span></span>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+    <h1>shimau へようこそ</h1>
+    <p class="lead" id="lead">あと 2 ステップで、ダウンロードの自動振り分けが使えます。</p>
+  </div>
+
+  <ol class="card steps">
+    <li class="step done">
+      <div class="num" data-check></div>
+      <div class="body"><h3>拡張機能を入れる</h3><p>完了しました。</p></div>
+    </li>
+
+    <li class="step now" id="s2">
+      <div class="num">2</div>
+      <div class="body">
+        <h3>ヘルパーを入れる</h3>
+        <p>ファイルを Googleドライブや SSD へ移動する小さなアプリです。ネット通信はしません。</p>
+
+        <div id="install">
+          <div class="flow3">
+            <div class="tile">
+              <div class="tn">1</div>
+              <b>ダウンロード</b>
+              <a class="btn primary sm" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-os="mac">Mac 用</span><span data-os="win" hidden>Windows 用</span></a>
+            </div>
+            <div class="tile">
+              <div class="tn">2</div>
+              <b>開く</b>
+              <span data-os="mac">zip を開き、出てきた<br>「shimau ヘルパー」を<br>ダブルクリック</span>
+              <span data-os="win" hidden>ダウンロード一覧から<br>開く</span>
+            </div>
+            <div class="tile">
+              <div class="tn">3</div>
+              <b>完了</b>
+              <span>「インストールしました」<br>と出たらおしまい</span>
+            </div>
+          </div>
+
+          <button class="vcard" data-os="mac" data-play="0">
+            <span class="thumb"><img src="media/install-mac-poster.jpg" alt=""><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span><span class="dur">1:04</span></span>
+            <span class="vt"><b>動画で見る</b><span>止められたときの対処まで、1 分でわかります</span></span>
+            <span class="vchev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </button>
+
+          <details class="warn" id="warn">
+            <summary>
+              <span class="wi">!</span>
+              <span class="wt"><b>最初の 1 回は止められます</b><span data-os="mac">「開けません」と出たら、ここを開いてください</span><span data-os="win" hidden>「PC が保護されました」と出たら、ここを開いてください</span></span>
+              <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+            </summary>
+
+            <div class="wbody" data-os="mac">
+              <ol class="wsteps">
+                <li><span>1</span><p>「完了」を押す</p></li>
+                <li><span>2</span><p>「システム設定」→「プライバシーとセキュリティ」のいちばん下で、<b>「このまま開く」</b>を押す</p></li>
+                <li><span>3</span><p>パスワード（または Touch ID）を入れる</p></li>
+                <li><span>4</span><p><b>もう一度「shimau ヘルパー」をダブルクリック</b>し、確認が出たら「このまま開く」を押す</p></li>
+              </ol>
+              <div class="actions">
+                <a class="btn ghost sm" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>設定を開く</a>
+                <button class="btn text sm" data-play="22"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>この部分を動画で見る</button>
+              </div>
+            </div>
+
+            <div class="wbody" data-os="win" hidden>
+              <div class="shots">
+                <div class="shot">
+                  <div class="cap"><i>a</i>「詳細情報」を押す</div>
+                  <div class="smart">
+                    <b>Windows によって PC が保護されました</b>
+                    <div class="t">Microsoft Defender SmartScreen は認識されないアプリの起動を停止しました。このアプリを実行すると、PC に問題が起こる可能性があります。</div>
+                    <span class="lk press">詳細情報</span>
+                    <div class="bs"><span class="def">実行しない</span></div>
+                  </div>
+                </div>
+                <div class="shot">
+                  <div class="cap"><i>b</i>「実行」を押す</div>
+                  <div class="smart">
+                    <b>Windows によって PC が保護されました</b>
+                    <div class="t">Microsoft Defender SmartScreen は認識されないアプリの起動を停止しました。このアプリを実行すると、PC に問題が起こる可能性があります。</div>
+                    <div class="kv">アプリ:　shimau-helper-setup.exe<br>発行元:　不明な発行元</div>
+                    <div class="bs"><span class="press">実行</span><span class="def">実行しない</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+        <div class="status" id="wait"><div class="spin"></div><span>ヘルパーの接続を待っています… インストールが終わると自動で次へ進みます。</span></div>
+        <div class="status ok" id="okmsg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span>ヘルパーとつながりました（v0.2.0）</span></div>
+
+        <details class="trouble" id="trouble">
+          <summary>うまくいかないとき</summary>
+          <ul>
+            <li>「インストールしました」と出たのに進まない → Brave を一度終了して開き直してください。</li>
+            <li data-os="mac">「このまま開く」が見つからない → もう一度「shimau ヘルパー」をダブルクリックしてから、設定を開き直してください。</li>
+            <li data-os="mac">「このまま開く」を押しても何も起きない → もう一度「shimau ヘルパー」をダブルクリックしてください。</li>
+            <li data-os="win" hidden>「実行」が出ない → 「詳細情報」の文字を押すと出てきます。</li>
+          </ul>
+        </details>
+      </div>
+    </li>
+
+    <li class="step" id="s3">
+      <div class="num">3</div>
+      <div class="body">
+        <h3>最初のルールを作る</h3>
+        <p>「このサイトのダウンロードは、このフォルダへ」を登録します。保存先の選択から始められます。</p>
+        <div class="actions" id="s3act" hidden>
+          <a class="btn primary" href="#">はじめる<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="foot">あとで設定する場合は、このタブを閉じてください。設定画面の「ヘルパー」からいつでも再開できます。</div>
+</div>
+
+
+<dialog class="player" id="player" aria-label="shimau ヘルパーの入れ方（動画）">
+  <div class="pbox">
+    <button class="pclose" id="pclose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <video id="vid" src="media/install-mac.mp4" poster="media/install-mac-poster.jpg" controls playsinline preload="metadata"></video>
+  </div>
+</dialog>
+
+<script>
+const state={os:'mac',st:'wait',theme:'light'};
+const check='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const $=id=>document.getElementById(id);
+function render(){
+  document.documentElement.dataset.theme=state.theme;
+  document.querySelectorAll('[data-os]').forEach(e=>e.hidden=e.dataset.os!==state.os);
+  const ok=state.st==='ok', s2=$('s2'), s3=$('s3');
+  s2.classList.toggle('now',!ok); s2.classList.toggle('done',ok);
+  s3.classList.toggle('now',ok);
+  s2.querySelector('.num').innerHTML=ok?check:'2';
+  $('install').hidden=ok;
+  $('wait').hidden=ok;
+  $('trouble').hidden=ok;
+  $('okmsg').hidden=!ok;
+  $('s3act').hidden=!ok;
+  $('lead').textContent=ok?'あと 1 ステップです。':'あと 2 ステップで、ダウンロードの自動振り分けが使えます。';
+}
+document.querySelector('[data-check]').innerHTML=check;
+document.querySelectorAll('.seg').forEach(seg=>seg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  state[seg.dataset.k]=b.dataset.v; render();
+}));
+document.querySelectorAll('a[href="#"]').forEach(a=>a.addEventListener('click',e=>e.preventDefault()));
+render();
+// 動画は <dialog> の showModal() で開く（背面は操作できない・Esc で閉じる・閉じると押したボタンへフォーカスが戻る）
+const player=$('player'), vid=$('vid');
+document.querySelectorAll('[data-play]').forEach(b=>b.addEventListener('click',e=>{
+  e.preventDefault(); player.showModal(); vid.focus(); vid.currentTime=Number(b.dataset.play); vid.play().catch(()=>{});
+}));
+player.addEventListener('close',()=>vid.pause());
+$('pclose').onclick=()=>player.close();
+player.addEventListener('click',e=>{ if(e.target===player) player.close(); }); // 暗い部分を押しても閉じる
+</script>
+</body>
+</html>

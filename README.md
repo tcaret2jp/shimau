@@ -18,8 +18,9 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.2.0（`shimau-helper-mac.zip`・`shimau-helper-setup.exe`）を公開済み
 
 ## 次にやること
-1. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
-2. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
+1. Mac のインストール手順の動画を仕上げる：Mac でスクショ A〜E を撮る（下の「動画」）→ 差し込んで書き出し → モック v4（[docs/mockup-welcome-v4.html](docs/mockup-welcome-v4.html)）の OK をもらってから、はじめての設定画面に入れる
+2. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
+3. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
 
 ## 構成
 ```
@@ -93,6 +94,18 @@ cd helper && go test ./... && ./build.sh   # ヘルパーのテストとビル�
 ```
 Go は Pi の `~/.local/go`（sudo なしで導入）を使う。
 Mac 用アプリの署名（ad-hoc、無料）は Pi の `~/.local/bin/rcodesign`（apple-codesign 0.29.0）で `build.sh` が自動で行う。署名しないと Mac で「壊れているため開けません」になるため、rcodesign がないときは `shimau-helper-mac-unsigned.zip` だけを作る（そのときは Mac で `helper/sign-mac.sh`）。
+
+## 動画（インストール手順の説明）
+Mac で「このまま開く」を押したあと、もう一度ヘルパーを開く必要がある（実機で判明）。手順が多いので、Apple サポートの YouTube 動画のような図解の動画で案内する。
+- `video/src/install-mac.html`：動画の中身（1280×720 の HTML アニメーション）。Finder やブラウザは図解、OS の画面だけスクショ
+- `video/src/render.mjs`：Chromium で 1 コマずつ撮って mp4 にする（`node video/src/render.mjs video/src/install-mac.html video/out/install-mac.mp4`、約 2.5 分）
+- スクショは `video/shots/a.png`〜`e.png` に置くと、差し込み枠に自動で入る。個人情報（ユーザー名・ファイル名など）は消してから置く
+  - A：「“shimau ヘルパー”は開いていません」のダイアログ
+  - B：システム設定 › プライバシーとセキュリティ のいちばん下（「このまま開く」）
+  - C：パスワード（Touch ID）の確認
+  - D：もう一度開いたときの確認（「このまま開く」）
+  - E：「インストールしました」のダイアログ
+- `video/raw/`（元の録画など）と `video/out/` は git に入れない
 
 ## 経緯
 - アイデア出しと要件定義は `00_cc` のセッションで実施

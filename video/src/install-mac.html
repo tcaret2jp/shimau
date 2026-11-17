@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>shimau ヘルパーを入れる（Mac）</title>
+<!-- 動画用のページ（render.mjs で 1 コマずつ撮って mp4 にする）。拡張機能には入れない -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+:root{--ink:#1d1d1f;--ink2:#6e6e73;--line:#d2d2d7;--soft:#f5f5f7;--blue:#0071e3;--accent:#f0532b;--ok:#2fb350}
+*{box-sizing:border-box}
+html,body{margin:0;width:1280px;height:720px;overflow:hidden;background:#fff;color:var(--ink);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased}
+.scene{position:absolute;inset:0;opacity:0}
+.abs{position:absolute}
+
+/* 見出し（Apple サポート動画のように、上に大きく） */
+.head{position:absolute;left:0;right:0;top:58px;text-align:center}
+.head .step{font-size:17px;font-weight:500;color:var(--ink2);letter-spacing:.04em;margin-bottom:6px}
+.head h2{margin:0;font-size:38px;font-weight:700;letter-spacing:.01em}
+.head p{margin:8px 0 0;font-size:19px;color:var(--ink2)}
+
+/* ウィンドウ（図解） */
+.win{position:absolute;background:#fff;border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 24px 60px rgba(0,0,0,.14);overflow:hidden}
+.bar{height:40px;background:#f6f6f6;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;gap:8px;padding:0 14px}
+.bar i{width:12px;height:12px;border-radius:50%;background:#ff5f57}
+.bar i:nth-child(2){background:#febc2e}.bar i:nth-child(3){background:#28c840}
+.bar .addr{margin-left:18px;flex:1;max-width:360px;height:24px;border-radius:7px;background:#e9e9eb;font-size:12px;color:#6e6e73;display:flex;align-items:center;padding:0 10px}
+.bar .ttl{margin-left:14px;font-size:13px;font-weight:700;color:#4a4a4f}
+
+.icon-app{width:76px;height:76px;border-radius:18px;background:var(--accent);display:grid;place-items:center;box-shadow:0 6px 16px rgba(240,83,43,.3)}
+.icon-app svg{width:42px;height:42px}
+.icon-zip{width:62px;height:76px;border-radius:6px;background:linear-gradient(#fafafa,#ececec);box-shadow:0 0 0 1px rgba(0,0,0,.12),0 4px 10px rgba(0,0,0,.08);position:relative}
+.icon-zip::before{content:"";position:absolute;left:27px;top:0;width:8px;height:42px;background:repeating-linear-gradient(#8e8e93 0 4px,#d1d1d6 4px 8px)}
+.icon-zip::after{content:"ZIP";position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:11px;font-weight:700;color:#8e8e93}
+.label{white-space:nowrap;font-size:13px;text-align:center;margin-top:8px;color:var(--ink)}
+
+/* スクショの差し込み枠 */
+.slot{position:absolute;border:2px dashed #b0b0b8;border-radius:14px;background:repeating-linear-gradient(-45deg,#fafafa 0 14px,#f2f2f5 14px 28px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;gap:8px}
+.slot .cam{width:44px;height:44px;border-radius:12px;background:#fff;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.slot .cam svg{width:24px;height:24px;stroke:#8e8e93}
+.slot b{font-size:17px}
+.slot span{font-size:13px;color:var(--ink2);line-height:1.5}
+.slot em{position:absolute;top:10px;right:10px;font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#8e8e93;border-radius:6px;padding:2px 8px}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:12px}
+
+/* 押す場所の輪 */
+.ring{position:absolute;border-radius:12px;box-shadow:0 0 0 3px var(--blue),0 0 0 9px rgba(0,113,227,.18);opacity:0}
+
+/* カーソルとクリック */
+#cursor{position:absolute;left:0;top:0;width:26px;height:34px;z-index:10;opacity:0;transform-origin:3px 3px}
+.ripple{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(0,113,227,.28);z-index:9;opacity:0}
+
+.chip{position:absolute;display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 10px 24px rgba(0,0,0,.12)}
+.chip .ok{width:18px;height:18px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.chip .ok svg{width:11px;height:11px}
+.path{position:absolute;left:0;right:0;top:186px;display:flex;justify-content:center;align-items:center;gap:12px}
+.path .p{background:var(--soft);border-radius:999px;padding:8px 16px;font-size:16px;font-weight:500;opacity:0}
+.path .ar{color:#aeaeb2;font-size:18px;opacity:0}
+.tip{position:absolute;left:0;right:0;text-align:center;font-size:15px;color:var(--ink2)}
+.tip b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<!-- ===== 0. タイトル ===== -->
+<section class="scene" id="s0">
+  <div class="icon-app abs" id="s0icon" style="left:602px;top:200px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+  <div class="abs" id="s0t" style="left:0;right:0;top:310px;text-align:center"><div style="font-size:46px;font-weight:700">shimau ヘルパーを入れる</div><div style="font-size:21px;color:var(--ink2);margin-top:10px">Mac ・ 約 1 分</div></div>
+</section>
+
+<!-- ===== 1. ダウンロード ===== -->
+<section class="scene" id="s1">
+  <div class="head"><div class="step">ステップ 1</div><h2>ダウンロードする</h2><p>「はじめての設定」画面の「Mac 用」を押します</p></div>
+  <div class="win" style="left:240px;top:210px;width:800px;height:330px">
+    <div class="bar"><i></i><i></i><i></i><div class="addr">shimau はじめての設定</div></div>
+    <div style="padding:26px 40px">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px"><span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center">2</span><b style="font-size:18px">ヘルパーを入れる</b></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        <div style="background:var(--soft);border-radius:12px;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px"><b>ダウンロード</b><span id="macbtn" style="background:var(--accent);color:#fff;font-weight:700;font-size:14px;border-radius:9px;padding:8px 16px">Mac 用</span></div>
+        <div style="background:var(--soft);border-radius:12px;height:150px;display:grid;place-items:center"><b>開く</b></div>
+        <div style="background:var(--soft);border-radius:12px;height:150px;display:grid;place-items:center"><b>完了</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="chip" id="dlchip" style="left:780px;top:258px;opacity:0"><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>shimau-helper-mac.zip</div>
+</section>
+
+<!-- ===== 2. 開く ===== -->
+<section class="scene" id="s2">
+  <div class="head"><div class="step">ステップ 2</div><h2>開く</h2><p>zip を開き、出てきた「shimau ヘルパー」をダブルクリックします</p></div>
+  <div class="win" style="left:290px;top:200px;width:700px;height:410px">
+    <div style="display:flex;height:100%">
+      <div style="width:170px;background:#f2f2f4;border-right:1px solid #e5e5e5;padding:52px 12px 0">
+        <div style="height:10px;width:70px;background:#dcdce0;border-radius:5px;margin:0 8px 14px"></div>
+        <div style="background:#dcdce0;border-radius:7px;padding:6px 10px;font-size:13px;font-weight:500">ダウンロード</div>
+        <div style="height:10px;width:90px;background:#e4e4e8;border-radius:5px;margin:14px 8px"></div>
+        <div style="height:10px;width:60px;background:#e4e4e8;border-radius:5px;margin:14px 8px"></div>
+      </div>
+      <div style="flex:1"><div class="bar" style="background:#fff"><i></i><i></i><i></i><span class="ttl">ダウンロード</span></div></div>
+    </div>
+  </div>
+  <div class="abs" id="zip" style="left:504px;top:300px;width:130px;display:flex;flex-direction:column;align-items:center"><div class="icon-zip"></div><div class="label">shimau-helper-mac.zip</div></div>
+  <div class="abs" id="app" style="left:700px;top:300px;width:110px;display:flex;flex-direction:column;align-items:center;opacity:0"><div class="icon-app"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div><div class="label">shimau ヘルパー</div></div>
+</section>
+
+<!-- ===== 3. 止められる ===== -->
+<section class="scene" id="s3">
+  <div class="head"><div class="step">ステップ 3</div><h2>最初の 1 回は止められます</h2><p>Apple に登録していないアプリのためです。「完了」を押します</p></div>
+  <div class="slot" data-shot="a" style="left:490px;top:205px;width:300px;height:360px"><em>差し替え予定</em><div class="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>スクショ A</b><span>「“shimau ヘルパー”は<br>開いていません」の<br>ダイアログ</span></div>
+  <div class="ring" id="ringA" style="left:512px;top:470px;width:256px;height:34px"></div>
+</section>
+
+<!-- ===== 4. 設定で「このまま開く」 ===== -->
+<section class="scene" id="s4">
+  <div class="head"><div class="step">ステップ 4</div><h2>設定で「このまま開く」を押す</h2><p>「プライバシーとセキュリティ」のいちばん下にあります</p></div>
+  <div class="path"><span class="p" id="p1">画面左上のアップルメニュー</span><span class="ar" id="a1">›</span><span class="p" id="p2">システム設定</span><span class="ar" id="a2">›</span><span class="p" id="p3">プライバシーとセキュリティ</span></div>
+  <div class="slot" data-shot="b" style="left:290px;top:250px;width:700px;height:300px;opacity:0" id="slotB"><em>差し替え予定</em><div class="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>スクショ B</b><span>システム設定 › プライバシーとセキュリティ のいちばん下<br>（“shimau ヘルパー”はブロックされました ／ このまま開く）</span></div>
+  <div class="ring" id="ringB" style="left:832px;top:470px;width:132px;height:34px"></div>
+  <div class="tip" style="top:582px;opacity:0" id="tipB">「はじめての設定」画面の <b>「設定を開く」</b> からも開けます</div>
+</section>
+
+<!-- ===== 5. パスワード ===== -->
+<section class="scene" id="s5">
+  <div class="head"><div class="step">ステップ 5</div><h2>パスワードを入力する</h2><p>Mac にログインするときのパスワード（または Touch ID）です</p></div>
+  <div class="slot" data-shot="c" style="left:490px;top:205px;width:300px;height:340px"><em>差し替え予定</em><div class="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>スクショ C</b><span>パスワード（Touch ID）の確認<br>※ユーザー名はぼかす</span></div>
+  <div class="tip" style="top:575px">入力した文字は、shimau には伝わりません</div>
+</section>
+
+<!-- ===== 6. もう一度開く ===== -->
+<section class="scene" id="s6">
+  <div class="head"><div class="step">ステップ 6</div><h2>もう一度「shimau ヘルパー」を開く</h2><p>ダブルクリックし、確認が出たら「このまま開く」を押します</p></div>
+  <div class="win" style="left:200px;top:230px;width:360px;height:300px"><div class="bar"><i></i><i></i><i></i><span class="ttl">ダウンロード</span></div></div>
+  <div class="abs" id="app6" style="left:325px;top:320px;width:110px;display:flex;flex-direction:column;align-items:center"><div class="icon-app"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div><div class="label">shimau ヘルパー</div></div>
+  <div class="slot" data-shot="d" style="left:660px;top:205px;width:300px;height:360px;opacity:0" id="slotD"><em>差し替え予定</em><div class="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>スクショ D</b><span>もう一度開いたときの確認<br>（このまま開く）</span></div>
+  <div class="ring" id="ringD" style="left:682px;top:470px;width:256px;height:34px"></div>
+</section>
+
+<!-- ===== 7. 完了 ===== -->
+<section class="scene" id="s7">
+  <div class="head"><div class="step">ステップ 7</div><h2>「インストールしました」で完了</h2><p>Brave の画面は自動で次へ進みます</p></div>
+  <div class="slot" data-shot="e" style="left:220px;top:215px;width:340px;height:330px"><em>差し替え予定</em><div class="cam"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>スクショ E</b><span>「インストールしました」の<br>ダイアログ</span></div>
+  <div class="abs" id="arr7" style="left:592px;top:350px;font-size:40px;color:#c7c7cc;opacity:0">›</div>
+  <div class="win" id="done7" style="left:660px;top:250px;width:400px;height:260px;opacity:0">
+    <div class="bar"><i></i><i></i><i></i><div class="addr">shimau はじめての設定</div></div>
+    <div style="padding:30px;display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <b style="font-size:20px">ヘルパーとつながりました</b>
+      <span style="color:var(--ink2);font-size:14px">そのまま最初のルール作りへ進みます</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. おわり ===== -->
+<section class="scene" id="s8">
+  <div class="abs" style="left:0;right:0;top:250px;text-align:center">
+    <div id="s8c" style="width:84px;height:84px;margin:0 auto 26px;border-radius:50%;background:var(--ok);display:grid;place-items:center"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div style="font-size:42px;font-weight:700">準備ができました</div>
+    <div style="font-size:20px;color:var(--ink2);margin-top:10px">警告が出るのは最初の 1 回だけです</div>
+  </div>
+</section>
+
+<svg id="cursor" viewBox="0 0 26 34"><path d="M3 2v24l6.2-5.6 4.1 9.4 4-1.7-4-9.2H22z" fill="#000" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+
+<script>
+// ---------- 時間割（秒） ----------
+const E = 'cubic-bezier(.25,.1,.25,1)';
+const EO = 'cubic-bezier(.2,.8,.2,1)';
+const $ = (id) => document.getElementById(id);
+const anim = (el, kf, t, d, easing = E) => el.animate(kf, { delay: t * 1000, duration: d * 1000, fill: 'forwards', easing });
+const fadeIn = (el, t, d = .5, dy = 14) => anim(el, [{ opacity: 0, transform: `translateY(${dy}px)` }, { opacity: 1, transform: 'none' }], t, d, EO);
+const pop = (el, t, d = .45) => anim(el, [{ opacity: 0, transform: 'scale(.85)' }, { opacity: 1, transform: 'none' }], t, d, EO);
+
+// 場面の出入り（見出しは少し遅れて出す）
+function scene(id, t0, t1) {
+  const el = $(id);
+  anim(el, [{ opacity: 0 }, { opacity: 1 }], t0, .5);
+  anim(el, [{ opacity: 1 }, { opacity: 0 }], t1 - .45, .45);
+  const head = el.querySelector('.head');
+  if (head) fadeIn(head, t0 + .1, .6, 18);
+}
+
+// カーソル
+const cur = $('cursor');
+let pos = { x: 1300, y: 760 };
+const at = (p) => `translate(${p.x}px, ${p.y}px)`;
+function show(t, p) { pos = p; anim(cur, [{ opacity: 0, transform: at(p) }, { opacity: 1, transform: at(p) }], t, .3); }
+function hide(t) { anim(cur, [{ opacity: 1, transform: at(pos) }, { opacity: 0, transform: at(pos) }], t, .3); }
+function move(t, p, d = .8) { const from = pos; pos = p; anim(cur, [{ transform: at(from), opacity: 1 }, { transform: at(p), opacity: 1 }], t, d, 'cubic-bezier(.45,.05,.25,1)'); }
+function click(t, n = 1) {
+  for (let i = 0; i < n; i++) {
+    const tt = t + i * .22;
+    anim(cur, [{ transform: at(pos) + ' scale(1)', opacity: 1 }, { transform: at(pos) + ' scale(.82)', opacity: 1, offset: .4 }, { transform: at(pos) + ' scale(1)', opacity: 1 }], tt, .2);
+    const r = document.createElement('div');
+    r.className = 'ripple';
+    r.style.left = pos.x + 3 + 'px';
+    r.style.top = pos.y + 3 + 'px';
+    document.body.appendChild(r);
+    anim(r, [{ opacity: .9, transform: 'scale(.3)' }, { opacity: 0, transform: 'scale(1.5)' }], tt, .5, EO);
+  }
+}
+const ring = (id, t) => anim($(id), [{ opacity: 0, transform: 'scale(1.15)' }, { opacity: 1, transform: 'none' }], t, .45, EO);
+
+// 0. タイトル 0–4.5
+scene('s0', 0, 4.5);
+pop($('s0icon'), .3, .6);
+fadeIn($('s0t'), .7, .7, 20);
+
+// 1. ダウンロード 4.5–12
+scene('s1', 4.5, 12);
+show(6.0, { x: 980, y: 600 });
+move(6.3, { x: 398, y: 408 }, 1.1);
+click(7.7);
+anim($('macbtn'), [{ filter: 'brightness(1)' }, { filter: 'brightness(.85)' }, { filter: 'brightness(1)' }], 7.7, .3);
+pop($('dlchip'), 8.3);
+move(9.2, { x: 900, y: 295 }, .9);
+hide(11.4);
+
+// 2. 開く 12–21
+scene('s2', 12, 21);
+show(13.3, { x: 820, y: 560 });
+move(13.6, { x: 568, y: 340 }, 1.0);
+click(14.9, 2);
+pop($('app'), 15.6, .5);
+move(16.6, { x: 758, y: 340 }, .9);
+click(17.8, 2);
+anim($('app'), [{ transform: 'scale(1)' }, { transform: 'scale(.94)' }, { transform: 'scale(1)' }], 17.8, .45);
+hide(20.2);
+
+// 3. 止められる 21–29
+scene('s3', 21, 29);
+ring('ringA', 23.6);
+show(24.4, { x: 900, y: 620 });
+move(24.7, { x: 645, y: 488 }, 1.0);
+click(26.1);
+hide(28.2);
+
+// 4. 設定 29–39
+scene('s4', 29, 39);
+['p1', 'a1', 'p2', 'a2', 'p3'].forEach((id, i) => fadeIn($(id), 30.0 + i * .35, .45, 8));
+fadeIn($('slotB'), 32.2, .6, 18);
+ring('ringB', 34.0);
+show(34.6, { x: 1100, y: 640 });
+move(34.9, { x: 900, y: 488 }, 1.0);
+click(36.2);
+fadeIn($('tipB'), 36.8, .5, 6);
+hide(38.2);
+
+// 5. パスワード 39–45
+scene('s5', 39, 45);
+
+// 6. もう一度開く 45–53.5
+scene('s6', 45, 53.5);
+show(46.2, { x: 520, y: 600 });
+move(46.5, { x: 383, y: 360 }, .9);
+click(47.6, 2);
+fadeIn($('slotD'), 48.4, .6, 18);
+ring('ringD', 50.0);
+move(50.5, { x: 815, y: 488 }, 1.0);
+click(51.8);
+hide(52.8);
+
+// 7. 完了 53.5–60
+scene('s7', 53.5, 60);
+fadeIn($('arr7'), 55.4, .4, 0);
+pop($('done7'), 55.8, .55);
+
+// 8. おわり 60–64
+scene('s8', 60, 64.5);
+pop($('s8c'), 60.3, .55);
+
+window.__duration = 64.5;
+
+// 撮ったスクショがあれば差し込む（video/shots/a.png など）
+// 撮影ツール（render.mjs）は window.__ready を待ってから撮り始める
+window.__ready = Promise.all([...document.querySelectorAll('.slot[data-shot]')].map((s) => new Promise((done) => {
+  const img = new Image();
+  img.onload = () => { s.replaceChildren(img); s.style.border = '0'; s.style.background = 'none'; s.style.padding = '0'; done(); };
+  img.onerror = done; // まだ無ければ差し込み枠のまま
+  img.src = `../shots/${s.dataset.shot}.png`;
+})));
+</script>
+</body>
+</html>

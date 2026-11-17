@@ -2,3 +2,5 @@ node_modules/
 helper/dist/
 .DS_Store
 helper/setup_payload/
+video/raw/
+video/out/
