@@ -32,8 +32,27 @@ async function init() {
     $('wait').querySelector('span').textContent = 'このパソコンの OS には対応していません（Mac / Windows 用です）。';
   }
 
+  setupPlayer();
   await check();
   document.addEventListener('visibilitychange', schedule);
+}
+
+// 動画は <dialog> の showModal() で開く（背面は操作できない・Esc で閉じる・閉じると押したボタンへフォーカスが戻る）
+function setupPlayer() {
+  const player = $('player');
+  const vid = $('vid');
+  document.querySelectorAll('[data-play]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!player.open) player.showModal();
+      vid.focus();
+      vid.currentTime = Number(b.dataset.play);
+      vid.play().catch(() => {});
+    }),
+  );
+  player.addEventListener('close', () => vid.pause());
+  $('pclose').addEventListener('click', () => player.close());
+  player.addEventListener('click', (e) => { if (e.target === player) player.close(); }); // 暗い部分を押しても閉じる
 }
 
 async function check() {
@@ -53,6 +72,7 @@ function schedule() {
 
 function connected(h) {
   clearTimeout(timer);
+  if ($('player').open) $('player').close(); // 動画を見ている間につながっても、次へ進めるように閉じる
   $('s2').classList.replace('now', 'done');
   $('s3').classList.add('now');
   $('n2').innerHTML = svg('check');

@@ -9,6 +9,7 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - デザインモック：OK 済み → [docs/mockup.html](docs/mockup.html)
 - 実装：拡張機能・ヘルパーまで完了（v0.2.0）
   - v0.2.0：ヘルパーを**ターミナルなしで入れられる**ように変更。ダウンロードしてダブルクリックするだけ（Mac：zip の中の「shimau ヘルパー」アプリ、Windows：`shimau-helper-setup.exe`）。初回に出る OS の警告への対処は、はじめての設定画面で絵付きで案内（モック OK 済み → [docs/mockup-welcome-v3.html](docs/mockup-welcome-v3.html)）
+  - 動画での案内（未リリース）：Mac の手順を図解の動画（1:04）にし、はじめての設定画面にサムネイル＋再生画面で入れた。警告への対処は文字の手順に変え、「もう一度ヘルパーを開く」を追加（モック v4 で OK → [docs/mockup-welcome-v4.html](docs/mockup-welcome-v4.html)）。OS の画面のスクショ A〜E はまだ差し込み枠
   - v0.1.1：Codex と Claude Code で全コードを相互レビューし、不具合と動作の重さを修正（下の「v0.1.1 の改善」）
   - Pi で確認済み：単体テスト（拡張・ヘルパー）、Chromium＋ヘルパーでの通しテスト（振り分け・同名ファイルの連番・ルール OFF のときは介入しない）
   - **未確認**：Mac / Windows 実機での動作（下の「実機での確認項目」）
@@ -18,7 +19,7 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.2.0（`shimau-helper-mac.zip`・`shimau-helper-setup.exe`）を公開済み
 
 ## 次にやること
-1. Mac のインストール手順の動画を仕上げる：Mac でスクショ A〜E を撮る（下の「動画」）→ 差し込んで書き出し → モック v4（[docs/mockup-welcome-v4.html](docs/mockup-welcome-v4.html)）の OK をもらってから、はじめての設定画面に入れる
+1. Mac のインストール手順の動画を仕上げる：Mac でスクショ A〜E を撮る（下の「動画」）→ 差し込んで書き出し → `docs/media/` と `extension/welcome/media/` の mp4・ポスターを差し替え
 2. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」
 3. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
 
@@ -105,6 +106,7 @@ Mac で「このまま開く」を押したあと、もう一度ヘルパーを�
   - C：パスワード（Touch ID）の確認
   - D：もう一度開いたときの確認（「このまま開く」）
   - E：「インストールしました」のダイアログ
+- 書き出した動画は `docs/media/`（モック用）と `extension/welcome/media/`（はじめての設定画面）の両方に置く
 - `video/raw/`（元の録画など）と `video/out/` は git に入れない
 
 ## 経緯

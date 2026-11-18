@@ -47,6 +47,12 @@
             </div>
           </div>
 
+          <button class="vcard" type="button" data-os="mac" data-play="0">
+            <span class="thumb"><img src="media/install-mac-poster.jpg" alt=""><span class="pl"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></span><span class="dur">1:04</span></span>
+            <span class="vt"><b>動画で見る</b><span>止められたときの対処まで、1 分でわかります</span></span>
+            <span class="vchev" data-icon="chev"></span>
+          </button>
+
           <details class="warn" id="warn">
             <summary>
               <span class="wi">!</span>
@@ -55,28 +61,15 @@
             </summary>
 
             <div class="wbody" data-os="mac">
-              <div class="shots">
-                <div class="shot">
-                  <div class="cap"><i>a</i>「完了」を押す</div>
-                  <div class="macdlg">
-                    <div class="ic">!</div>
-                    <b>“shimau ヘルパー”は開いていません</b>
-                    <div class="t">Apple は、“shimau ヘルパー”に Mac に損害を与えたり、プライバシーを侵害したりするマルウェアが含まれていないことを検証できませんでした。</div>
-                    <div class="bs"><span class="def press">完了</span><span>ゴミ箱に入れる</span></div>
-                  </div>
-                </div>
-                <div class="shot">
-                  <div class="cap"><i>b</i>設定で「このまま開く」</div>
-                  <div class="macset">
-                    <div class="h">セキュリティ</div>
-                    <div class="sub2">次からのアプリケーションの実行を許可<span>App Store と既知のデベロッパ ⌃</span></div>
-                    <div class="row"><span>“shimau ヘルパー”は Mac を保護するためにブロックされました。</span><span class="ob press">このまま開く</span></div>
-                  </div>
-                </div>
-              </div>
+              <ol class="wsteps">
+                <li><span>1</span><p>「完了」を押す</p></li>
+                <li><span>2</span><p>「システム設定」→「プライバシーとセキュリティ」のいちばん下で、<b>「このまま開く」</b>を押す</p></li>
+                <li><span>3</span><p>パスワード（または Touch ID）を入れる</p></li>
+                <li><span>4</span><p><b>もう一度「shimau ヘルパー」をダブルクリック</b>し、確認が出たら「このまま開く」を押す</p></li>
+              </ol>
               <div class="actions">
                 <a class="btn ghost sm" id="open-privacy" href="x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension"><span data-icon="open"></span>設定を開く</a>
-                <span class="hint">パスワードを聞かれたら入力し、もう一度「このまま開く」</span>
+                <button class="btn text sm" type="button" data-play="22"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>この部分を動画で見る</button>
               </div>
             </div>
 
@@ -111,6 +104,7 @@
           <summary>うまくいかないとき</summary>
           <ul>
             <li>「インストールしました」と出たのに進まない → Brave を一度終了して開き直してください。</li>
+            <li data-os="mac">「このまま開く」を押しても何も起きない → もう一度「shimau ヘルパー」をダブルクリックしてください。</li>
             <li data-os="mac">「このまま開く」が見つからない → もう一度「shimau ヘルパー」をダブルクリックしてから、設定を開き直してください。</li>
             <li data-os="win">「実行」が出ない → 「詳細情報」の文字を押すと出てきます。</li>
           </ul>
@@ -232,6 +226,12 @@
   </div>
   <div class="dots" id="dots" role="tablist" aria-label="スライド"></div>
 </div>
+<dialog class="player" id="player" aria-label="shimau ヘルパーの入れ方（動画）">
+  <div class="pbox">
+    <button class="pclose" id="pclose" type="button" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <video id="vid" src="media/install-mac.mp4" poster="media/install-mac-poster.jpg" controls playsinline preload="metadata"></video>
+  </div>
+</dialog>
 <script type="module" src="welcome.js"></script>
 </body>
 </html>

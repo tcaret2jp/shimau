@@ -58,30 +58,36 @@ details.warn[open] .wchev{transform:rotate(-90deg)}
 .shot .cap i{font-style:normal;width:16px;height:16px;border-radius:50%;background:var(--text-3);color:var(--surface);display:grid;place-items:center;font-size:10px}
 .press{box-shadow:0 0 0 2.5px var(--accent),0 0 0 6px var(--accent-soft)!important}
 
-.macdlg{background:#ececec;color:#1d1d1f;border-radius:12px;padding:14px 14px 12px;text-align:center;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.18);max-width:250px;margin:0 auto}
-.macdlg .ic{width:30px;height:30px;margin:0 auto 6px;border-radius:7px;background:linear-gradient(#ffd34d,#f5a623);display:grid;place-items:center;color:#7a4b00;font-weight:900;font-size:17px}
-.macdlg b{display:block;font-size:11.5px;margin-bottom:4px}
-.macdlg .t{color:#555;line-height:1.45}
-.macdlg .bs{display:grid;gap:5px;margin-top:10px}
-.macdlg .bs span{display:block;padding:4px;border-radius:6px;background:#fff;font-weight:600}
-.macdlg .bs span.def{background:#2f7cf6;color:#fff}
-.macset{background:#fff;color:#1d1d1f;border-radius:10px;padding:10px 12px;font-size:11px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
-.macset .h{font-weight:700;margin-bottom:6px}
-.macset .sub2{display:flex;justify-content:space-between;gap:8px;color:#555;padding:6px 0 8px;font-size:10.5px}
-.macset .sub2 span{color:#1d1d1f;font-weight:500}
-.macset .row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid rgba(0,0,0,.08)}
-.macset .row span:first-child{color:#555;line-height:1.4}
-.macset .ob{flex:none;padding:3px 9px;border-radius:6px;background:#e8e8ed;font-weight:600}
-@media (prefers-color-scheme:dark){
-  .macdlg{background:#323236;color:#eee}
-  .macdlg .t{color:#bbb}
-  .macdlg .bs span{background:#4a4a4f}
-  .macset{background:#2a2a2e;color:#eee}
-  .macset .sub2,.macset .row span:first-child{color:#bbb}
-  .macset .sub2 span{color:#eee}
-  .macset .row{border-top-color:rgba(255,255,255,.1)}
-  .macset .ob{background:#4a4a4f}
-}
+/* 動画カード */
+.vcard{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background .2s}
+.vcard:hover{background:var(--surface-2)}
+.thumb{position:relative;width:112px;height:63px;border-radius:7px;overflow:hidden;flex:none;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .pl{position:absolute;left:5px;bottom:5px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center}
+.thumb .pl svg{width:11px;height:11px;margin-left:1px}
+.thumb .dur{position:absolute;right:4px;bottom:4px;font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:4px;padding:0 4px}
+.vt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12px;color:var(--text-2)}
+.vt b{font-size:13.5px;color:var(--text)}
+.vchev{color:var(--text-3);flex:none}
+.vchev svg{width:16px;height:16px}
+.btn.text.sm{border:0;padding:6px 4px;font-size:12px;margin-top:0}
+.btn.text.sm svg{width:12px;height:12px}
+
+/* 警告への対処（文字の手順） */
+.wsteps{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:12.5px;color:var(--text-2)}
+.wsteps li{display:flex;gap:8px;align-items:flex-start}
+.wsteps li>span{width:18px;height:18px;border-radius:50%;background:var(--warn);color:#2b1a00;font-size:10.5px;font-weight:700;display:grid;place-items:center;flex:none;margin-top:1px}
+.wsteps p{margin:0}
+.wsteps b{color:var(--text)}
+
+/* 再生画面 */
+.player{border:0;padding:0;background:none;width:min(960px,calc(100vw - 32px),calc((100vh - 32px) * 16 / 9));max-width:none;max-height:none;overflow:visible}
+.player::backdrop{background:rgba(0,0,0,.6)}
+.pbox{position:relative;width:100%;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.pbox video{display:block;width:100%;aspect-ratio:16/9;background:#fff}
+.pclose{position:absolute;top:10px;right:10px;z-index:2;width:32px;height:32px;border-radius:50%;border:0;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center;cursor:pointer}
+.pclose svg{width:16px;height:16px}
+
 .smart{min-height:150px;display:flex;flex-direction:column;background:#0b5cad;color:#fff;border-radius:4px;padding:12px 14px 10px;font-size:11px;font-family:"Segoe UI","Yu Gothic UI",Meiryo,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .smart b{display:block;font-size:13px;font-weight:600;margin-bottom:6px;line-height:1.35}
 .smart .t{opacity:.9;line-height:1.45}
