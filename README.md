@@ -109,6 +109,18 @@ Mac で「このまま開く」を押したあと、もう一度ヘルパーを�
 - 書き出した動画は `docs/media/`（モック用）と `extension/welcome/media/`（はじめての設定画面）の両方に置く
 - `video/raw/`（元の録画など）と `video/out/` は git に入れない
 
+## LP（紹介ページ）
+- `lp/`：Vercel でそのまま配信する静的ページ（`index.html`・`favicon.svg`・`og.png`・`media/`）。ビルドなし
+- Vercel では Root Directory を `lp` にする。公開 URL は `shimau.vercel.app` の予定（OG 画像・紹介ムービーの最後に表示）。変わったら `lp/index.html` の `og:` と `video/src/promo.html` の URL を直す
+- ダウンロードボタンは GitHub の最新 Release ページへ（Brave ウェブストアには未公開のため）
+
+## 紹介ムービー（X・Instagram 用）
+- `video/src/promo.html`：31 秒の紹介ムービー。ページの縦横で 16:9 と 9:16 のレイアウトが切り替わる（9:16 はリール・TikTok の下の UI に隠れないよう、中身を上寄せ）
+- 書き出し（音声なし。BGM は投稿アプリで付ける）
+  - 16:9（1920×1080）：`node video/src/render.mjs video/src/promo.html video/out/shimau-promo-16x9.mp4 0 30 1280x720 1.5`
+  - 9:16（1080×1920）：`node video/src/render.mjs video/src/promo.html video/out/shimau-promo-9x16.mp4 0 30 720x1280 1.5`
+- 書き出したものは `docs/media/` に置く。16:9 は LP の `lp/media/shimau-promo.mp4` にも使う
+
 ## 経緯
 - アイデア出しと要件定義は `00_cc` のセッションで実施
 - 判断記録：`00_cc/02_Knowledge/02_Decison/2026-11-17_Braveダウンロード振り分けはヘルパー方式.md`

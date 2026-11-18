@@ -1,6 +1,8 @@
 // HTML のアニメーションを 1 コマずつ撮って動画にする（Pi 上の Chromium ＋ ffmpeg）
 //
-// 使い方: node video/src/render.mjs <scene.html> <出力.mp4> [秒数] [fps]
+// 使い方: node video/src/render.mjs <scene.html> <出力.mp4> [秒数] [fps] [幅x高さ] [倍率]
+// 秒数を 0 にするとページの window.__duration を使う。幅x高さ（既定 1280x720）はページの大きさ、
+// 倍率をかけた大きさで書き出す（例: 720x1280 と 1.5 → 1080x1920 の縦動画）。
 // scene.html は window.__duration（秒）を持ち、CSS / Web Animations で動くページ。
 // 撮影の前に window.__ready（Promise。画像の読み込みなど）を待つ。
 // 各コマで document.getAnimations() の再生位置をそろえてから撮るので、処理速度に関係なく正確な動画になる。
@@ -11,7 +13,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-const [, , sceneArg, outArg, durArg, fpsArg] = process.argv;
+const [, , sceneArg, outArg, durArg, fpsArg, sizeArg, scaleArg] = process.argv;
 if (!sceneArg || !outArg) {
   console.error('使い方: node render.mjs <scene.html> <出力.mp4> [秒数] [fps]');
   process.exit(1);
@@ -20,7 +22,12 @@ if (!existsSync(sceneArg)) {
   console.error(`見つかりません: ${sceneArg}`);
   process.exit(1);
 }
-const W = 1280, H = 720;
+const [W, H] = (sizeArg || '1280x720').split('x').map(Number);
+const SCALE = Number(scaleArg || 1);
+if (!(W > 0 && H > 0 && SCALE > 0)) {
+  console.error('幅x高さ・倍率の指定が正しくありません');
+  process.exit(1);
+}
 const fps = Number(fpsArg || 30);
 const CDP_TIMEOUT = 30_000;
 
@@ -92,7 +99,7 @@ try {
   };
 
   await send('Page.enable');
-  await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: SCALE, mobile: false });
   const url = pathToFileURL(resolve(sceneArg)).href;
   const loaded = waitEvent('Page.loadEventFired', 30_000); // 移動する前から待つ（取りこぼさないように）
   loaded.catch(() => {}); // 移動に失敗して待たなくなっても、未処理のエラーにしない
@@ -104,10 +111,10 @@ try {
   await evaluate('Promise.resolve(window.__ready).then(() => true)');
   await evaluate('Promise.all([...document.images].map((i) => i.decode().catch(() => 0))).then(() => true)');
 
-  const duration = Number(durArg || (await evaluate('window.__duration || 0')));
+  const duration = Number(durArg) || Number(await evaluate('window.__duration || 0'));
   if (!(duration > 0)) throw new Error('window.__duration がありません');
   const frames = Math.round(duration * fps);
-  console.log(`${sceneArg} → ${outArg}（${duration} 秒・${frames} コマ）`);
+  console.log(`${sceneArg} → ${outArg}（${Math.round(W * SCALE)}x${Math.round(H * SCALE)}・${duration} 秒・${frames} コマ）`);
 
   // 撮った JPEG はフルレンジ（0–255）なので、動画用の範囲（16–235）に変換してから yuv420p にする
   ff = spawn('ffmpeg', [

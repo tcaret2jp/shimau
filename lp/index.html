@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>shimau（しまう）｜ダウンロードを、あるべき場所へ。</title>
+<meta name="description" content="サイトごとに保存先を決めておくと、Brave でダウンロードしたファイルを自動でしまう拡張機能。Google ドライブ・Dropbox・外付け SSD にも。Mac / Windows 対応・無料。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="shimau（しまう）｜ダウンロードを、あるべき場所へ。">
+<meta property="og:description" content="サイトごとに保存先を決めておくと、Brave のダウンロードを自動でしまいます。Google ドライブ・Dropbox・外付け SSD にも。">
+<meta property="og:image" content="https://shimau.vercel.app/og.png">
+<meta property="og:url" content="https://shimau.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;--bg2:#f5f5f7;--surface:#ffffff;--line:#e2e2e7;
+  --ink:#1d1d1f;--ink2:#6e6e73;--ink3:#9a9aa0;
+  --accent:#f0532b;--accent-h:#d9461f;--accent-soft:rgba(240,83,43,.1);
+  --ok:#2fb350;--drive:#1f9d55;--dropbox:#2f6fe4;--ssd:#7a7a82;--local:#c9762a;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 12px 36px rgba(0,0,0,.09);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img,video,svg{display:block;max-width:100%}
+.wrap{width:min(1080px,100% - 32px);margin:0 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:14px 24px;font-weight:700;font-size:16px;text-decoration:none;transition:background .15s,transform .15s;white-space:nowrap}
+.btn svg{width:18px;height:18px;flex:none}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-h)}
+.btn.ghost{background:var(--bg2);color:var(--ink)}
+.btn.ghost:hover{background:#ebebef}
+.btn:active{transform:scale(.98)}
+.logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:19px;height:19px}
+
+/* ヘッダー */
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);border-bottom:1px solid rgba(0,0,0,.06)}
+header .wrap{display:flex;align-items:center;gap:24px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;text-decoration:none;letter-spacing:.01em}
+header nav{display:flex;align-items:center;gap:22px;margin-left:auto;font-size:14px}
+header nav a{text-decoration:none;color:var(--ink2)}
+header nav a:hover{color:var(--ink)}
+header .btn{padding:8px 16px;font-size:14px;border-radius:10px}
+
+/* ヒーロー */
+.hero{padding:72px 0 40px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;border-radius:999px;padding:6px 14px}
+.hero h1{font-size:clamp(34px,6.4vw,64px);line-height:1.25;font-weight:900;margin:20px 0 18px;letter-spacing:.01em}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero .lead{font-size:clamp(16px,2.1vw,19px);color:var(--ink2);margin:0 auto;max-width:640px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.note{margin-top:14px;font-size:13px;color:var(--ink3)}
+.movie{margin:48px auto 0;max-width:960px;border-radius:20px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 30px 80px rgba(0,0,0,.14);background:#fff;aspect-ratio:16/9}
+.movie video{width:100%;height:100%;object-fit:cover}
+
+section{padding:96px 0}
+.sec-head{text-align:center;margin-bottom:52px}
+.sec-head .k{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.sec-head h2{font-size:clamp(26px,4vw,38px);line-height:1.4;margin:8px 0 12px;font-weight:900}
+.sec-head p{margin:0 auto;color:var(--ink2);max-width:600px}
+
+/* 悩み */
+.pain{background:var(--bg2)}
+.pains{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pains div{background:#fff;border-radius:18px;padding:26px 24px;font-weight:700;font-size:17px;line-height:1.6}
+.pains small{display:block;font-weight:400;font-size:14px;color:var(--ink2);margin-top:6px}
+
+/* しくみ */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+.step{border:1px solid var(--line);border-radius:20px;padding:28px 26px;position:relative}
+.step::before{counter-increment:s;content:counter(s);width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-weight:900;display:grid;place-items:center;margin-bottom:16px}
+.step h3{margin:0 0 6px;font-size:19px}
+.step p{margin:0;color:var(--ink2);font-size:15px}
+.flow{margin-top:40px;display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.flow .site{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:12px;padding:10px 16px;font-weight:500;font-size:15px}
+.fav{width:22px;height:22px;border-radius:6px;color:#fff;font-size:12px;font-weight:900;display:grid;place-items:center}
+.flow .arr{color:var(--ink3)}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border-radius:999px;padding:6px 14px 6px 6px;font-size:14px;font-weight:700}
+.chip i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center}
+.chip i svg{width:14px;height:14px}
+
+/* 画面 */
+.screen{background:var(--bg2)}
+.screen-grid{display:grid;grid-template-columns:1fr 380px;gap:56px;align-items:center}
+.screen-grid h2{font-size:clamp(26px,3.6vw,36px);line-height:1.4;margin:8px 0 14px;font-weight:900}
+.screen-grid .k{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.screen-grid p{color:var(--ink2);margin:0 0 14px}
+.checks{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:10px}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-weight:500}
+.checks li::before{content:"";flex:none;width:20px;height:20px;margin-top:4px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/12px no-repeat}
+
+/* ポップアップの見本 */
+.popup{background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;font-size:14px;line-height:1.5}
+.popup .top{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.popup .top b{font-size:15px}
+.popup .st{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+.popup .st::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.card{margin:0 12px;border:1px solid var(--line);border-radius:14px;padding:14px}
+.card .row{display:flex;align-items:center;gap:12px}
+.card .big{width:38px;height:38px;border-radius:10px;font-size:16px}
+.card .dm{font-weight:700;font-size:16px}
+.card .sm{font-size:12.5px;color:var(--ink2)}
+.toggle{margin-left:auto;width:38px;height:22px;border-radius:999px;background:var(--accent);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.card hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.card .kv{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--ink2)}
+.recent{padding:14px 16px 6px;font-size:12.5px;font-weight:700;color:var(--ink2)}
+.list{margin:0 12px 14px;border:1px solid var(--line);border-radius:14px;padding:6px 0}
+.item{display:flex;align-items:center;gap:12px;padding:8px 12px}
+.item .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none}
+.item .ic svg{width:16px;height:16px}
+.item .nm{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .ds{font-size:12px;color:var(--ink2)}
+.item time{margin-left:auto;font-size:12px;color:var(--ink3);white-space:nowrap}
+
+/* 特長 */
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feat{background:var(--bg2);border-radius:20px;padding:28px 26px}
+.feat .fi{width:48px;height:48px;border-radius:14px;background:#fff;display:grid;place-items:center;margin-bottom:16px}
+.feat .fi svg{width:26px;height:26px}
+.feat h3{margin:0 0 6px;font-size:18px}
+.feat p{margin:0;color:var(--ink2);font-size:15px}
+
+/* はじめかた */
+.install{background:var(--ink);color:#fff}
+.install .sec-head p{color:#a3a3aa}
+.ins{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;counter-reset:i}
+.ins div{background:#2a2a2e;border-radius:20px;padding:28px 26px}
+.ins div::before{counter-increment:i;content:"STEP " counter(i);display:block;font-size:12px;font-weight:900;letter-spacing:.1em;color:#ff825c;margin-bottom:10px}
+.ins h3{margin:0 0 8px;font-size:18px}
+.ins p{margin:0;color:#b5b5bb;font-size:15px}
+.ins code{background:#3a3a40;border-radius:6px;padding:1px 7px;font-size:13.5px;color:#fff;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.install .cta{margin-top:40px}
+.install .btn.ghost{background:#2a2a2e;color:#fff}
+.install .btn.ghost:hover{background:#38383d}
+.install .note{color:#8a8a90;text-align:center}
+
+/* よくある質問 */
+.faq{max-width:760px;margin:0 auto}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;padding:22px 40px 22px 0;font-weight:700;font-size:17px;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";position:absolute;right:6px;top:50%;width:10px;height:10px;margin-top:-8px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(-135deg);margin-top:-2px}
+.faq details p{margin:-6px 0 22px;color:var(--ink2)}
+
+.final{text-align:center;padding:96px 0 104px;background:linear-gradient(180deg,#fff, var(--accent-soft))}
+.final .logo{width:72px;height:72px;border-radius:20px;margin:0 auto 22px}
+.final .logo svg{width:42px;height:42px}
+.final h2{font-size:clamp(28px,4.4vw,42px);margin:0 0 10px;font-weight:900;line-height:1.35}
+.final p{color:var(--ink2);margin:0}
+
+footer{border-top:1px solid var(--line);padding:28px 0;font-size:13px;color:var(--ink3)}
+footer .wrap{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+footer a{color:var(--ink2);text-decoration:none}
+footer .sp{margin-left:auto}
+
+@media (max-width:860px){
+  header nav a:not(.btn){display:none}
+  .pains,.steps,.feats,.ins{grid-template-columns:1fr}
+  .screen-grid{grid-template-columns:1fr;gap:40px}
+  .popup{max-width:380px;margin:0 auto;width:100%}
+  section{padding:72px 0}
+  .hero{padding-top:48px}
+  .feat,.step,.ins div{padding:20px}
+  .feat{display:grid;grid-template-columns:40px 1fr;column-gap:14px}
+  .feat .fi{width:40px;height:40px;border-radius:12px;margin:0;grid-row:span 2}
+  .feat .fi svg{width:22px;height:22px}
+  .step::before{margin-bottom:10px}
+  .movie{border-radius:14px;margin-top:36px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></span>shimau</a>
+    <nav>
+      <a href="#how">しくみ</a>
+      <a href="#features">できること</a>
+      <a href="#faq">よくある質問</a>
+      <a class="btn primary" href="#install">ダウンロード</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Brave の拡張機能 ・ Mac / Windows</span>
+      <h1>ダウンロードを、<br><em>あるべき場所</em>へ。</h1>
+      <p class="lead">サイトごとに保存先を決めておくと、ダウンロードしたファイルを自動でしまいます。Google ドライブ・Dropbox・外付け SSD にも。</p>
+      <div class="cta">
+        <a class="btn primary" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>無料ではじめる</a>
+        <a class="btn ghost" href="#how">しくみを見る</a>
+      </div>
+      <p class="note">無料 ・ アカウント登録なし</p>
+      <div class="movie"><video src="media/shimau-promo.mp4" poster="media/shimau-promo-poster.jpg" autoplay muted loop playsinline preload="metadata"></video></div>
+    </div>
+  </div>
+
+  <section class="pain">
+    <div class="wrap">
+      <div class="sec-head"><span class="k">こんなこと、ありませんか</span><h2>ダウンロードフォルダが、<br>いつのまにか物置に。</h2></div>
+      <div class="pains">
+        <div>授業の資料を、あとで Google ドライブへ移している<small>毎週同じフォルダに、手でドラッグ</small></div>
+        <div>請求書や領収書が、ほかのファイルに埋もれる<small>月末に探して、名前を見比べる</small></div>
+        <div>大きな動画で、Mac の容量がすぐいっぱい<small>外付け SSD に移すのを忘れがち</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="sec-head"><span class="k">しくみ</span><h2>決めておくのは、最初の 1 回だけ</h2><p>あとはいつもどおりダウンロードするだけ。登録したサイトのファイルだけが、決めた場所に届きます。</p></div>
+      <div class="steps">
+        <div class="step"><h3>保存先を作る</h3><p>「大学資料」「経理」など、名前を付けてフォルダを選びます。Google ドライブや SSD の中も選べます。</p></div>
+        <div class="step"><h3>サイトを登録する</h3><p>よく使うサイトを開いて、ツールバーの shimau から保存先を選ぶだけ。</p></div>
+        <div class="step"><h3>いつもどおりダウンロード</h3><p>完了すると自動で保存先へ移り、「〇〇に保存しました」と通知が出ます。</p></div>
+      </div>
+      <div class="flow">
+        <span class="site"><span class="fav" style="background:#1f9d55">D</span>drive.google.com</span>
+        <span class="arr">→</span>
+        <span class="chip"><i style="background:#e3f4ea"><svg viewBox="0 0 24 24" fill="none" stroke="#1f9d55" stroke-width="2.2" stroke-linejoin="round"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></svg></i>大学資料（Drive）</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen">
+    <div class="wrap screen-grid">
+      <div>
+        <span class="k">ツールバーから</span>
+        <h2>今のサイトを、<br>その場で登録。</h2>
+        <p>アイコンを押すと、開いているサイトが登録済みかどうかが分かります。保存先を選べば登録完了。最近しまったファイルも、ここから開けます。</p>
+        <ul class="checks">
+          <li>サブドメインもまとめて登録（完全一致にも切り替え可）</li>
+          <li>ルールごとに ON / OFF</li>
+          <li>しまったファイルのフォルダをワンクリックで開く</li>
+        </ul>
+      </div>
+      <div class="popup" aria-hidden="true">
+        <div class="top"><span class="logo" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></span><b>shimau</b><span class="st">ヘルパー接続中</span></div>
+        <div class="card">
+          <div class="row"><span class="fav big" style="background:#f58a2b">D</span><div><div class="dm">drive.google.com</div><div class="sm">このサイトを振り分け中</div></div><span class="toggle"></span></div>
+          <hr>
+          <div class="kv">保存先<span class="chip" style="font-size:13px"><i style="background:#1f9d55"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></svg></i>大学資料（Drive）</span></div>
+        </div>
+        <div class="recent">最近の振り分け</div>
+        <div class="list">
+          <div class="item"><span class="ic" style="background:#1f9d55"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></svg></span><div style="min-width:0"><div class="nm">情報管理論_第8回.pdf</div><div class="ds">大学資料（Drive）</div></div><time>2分前</time></div>
+          <div class="item"><span class="ic" style="background:#2f6fe4"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M7 3l5 3.2-5 3.3L2 6.2zM17 3l5 3.2-5 3.3-5-3.3zM2 12.8l5-3.3 5 3.3-5 3.2zM17 9.5l5 3.3-5 3.2-5-3.2zM7 17.3l5-3.2 5 3.2-5 3.3z"/></svg></span><div style="min-width:0"><div class="nm">請求書_2026-11.pdf</div><div class="ds">経理（Dropbox）</div></div><time>35分前</time></div>
+          <div class="item"><span class="ic" style="background:#7a7a82"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 14h.01M11 14h6"/></svg></span><div style="min-width:0"><div class="nm">vlog_0412.mp4</div><div class="ds">動画（SSD）</div></div><time>1時間前</time></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head"><span class="k">できること</span><h2>さわるのは、登録したサイトだけ</h2><p>それ以外のダウンロードは、Brave の設定のまま。いつもの使い心地は変わりません。</p></div>
+      <div class="feats">
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6fe4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/></svg></div><h3>クラウドや SSD に直接</h3><p>Google ドライブ・Dropbox・外付け SSD など、Finder やエクスプローラーで見える場所ならどこでも。</p></div>
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#2fb350" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div><h3>ファイルは消えない</h3><p>SSD を外しているなど保存先が見つからないときは、ダウンロードフォルダに残して通知します。</p></div>
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#e8930c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="13" height="16" rx="2"/><path d="M8 21h11a1 1 0 0 0 1-1V7"/></svg></div><h3>上書きしない</h3><p>同じ名前のファイルがあれば「名前 (1).pdf」のように、ブラウザと同じ付け方で保存します。</p></div>
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#8a63d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M5 17h6"/><rect x="16" y="7" width="6" height="12" rx="1.5"/></svg></div><h3>Mac と Windows で共有</h3><p>ルールを書き出して、もう一方の PC で読み込めます。保存先は PC ごとに設定できます。</p></div>
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#f0532b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div><h3>ネットに送らない</h3><p>ファイルを動かすヘルパーはネット通信をしません。ダウンロードフォルダ内のファイルしか動かしません。</p></div>
+        <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#1f9d55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>履歴が残る</h3><p>いつ・どのファイルを・どこへしまったか、直近 200 件をあとから確認できます。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="install" id="install">
+    <div class="wrap">
+      <div class="sec-head"><span class="k" style="color:#ff825c">はじめかた</span><h2>3 ステップ、5 分で準備完了</h2><p>いまは Brave ウェブストアではなく、GitHub から入れる形です。</p></div>
+      <div class="ins">
+        <div><h3>ダウンロードして開く</h3><p>下のボタンから最新版のページを開き、「Source code (zip)」をダウンロードして展開します。</p></div>
+        <div><h3>Brave に読み込む</h3><p>Brave で <code>brave://extensions</code> を開き、「デベロッパーモード」を ON。「パッケージ化されていない拡張機能を読み込む」で <code>extension</code> フォルダを選びます。</p></div>
+        <div><h3>はじめての設定</h3><p>自動で開く画面の案内に沿って、小さなヘルパーアプリを入れます。手順は動画で確認できます。</p></div>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/tcaret2jp/shimau/releases/latest" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>最新版をダウンロード</a>
+        <a class="btn ghost" href="https://github.com/tcaret2jp/shimau" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .8.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.5 9.5 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>GitHub で見る</a>
+      </div>
+      <p class="note">対応：Brave（Mac / Windows）</p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head"><span class="k">よくある質問</span><h2>気になるところ</h2></div>
+      <div class="faq">
+        <details><summary>無料ですか？</summary><p>はい、無料です。アカウント登録もいりません。</p></details>
+        <details><summary>登録していないサイトのダウンロードはどうなりますか？</summary><p>何もしません。Brave で設定しているフォルダに、いつもどおり保存されます。</p></details>
+        <details><summary>なぜヘルパーアプリが必要なのですか？</summary><p>ブラウザの拡張機能は、ダウンロードフォルダの外にファイルを保存できないためです。ヘルパーは、ダウンロードが終わったファイルを保存先へ移す役目だけを持つ小さなアプリで、Brave が必要なときだけ起動します。</p></details>
+        <details><summary>SSD を外していたり、Google ドライブが止まっていたら？</summary><p>ファイルはダウンロードフォルダに残し、「保存先が見つかりません」と通知でお知らせします。ファイルがなくなることはありません。</p></details>
+        <details><summary>インストールのとき、警告が出ました。</summary><p>Apple や Microsoft に登録していないアプリのため、最初の 1 回だけ確認が出ます。はじめての設定画面に、Mac は動画、Windows は手順で対処のしかたを載せています。</p></details>
+        <details><summary>Chrome や Edge でも使えますか？</summary><p>いまは Brave のみに対応しています。</p></details>
+        <details><summary>アンインストールするには？</summary><p>拡張機能は <code style="background:var(--bg2);border-radius:6px;padding:1px 7px;font-size:14px">brave://extensions</code> から削除します。ヘルパーは、ダウンロードしたヘルパーをもう一度開いて「削除する」を選びます。</p></details>
+      </div>
+    </div>
+  </section>
+
+  <div class="final">
+    <div class="wrap">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+      <h2>ダウンロードしたら、<br>もう片付いている。</h2>
+      <p>shimau で、ファイルをあるべき場所へ。</p>
+      <div class="cta"><a class="btn primary" href="#install"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>無料ではじめる</a></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 shimau</span>
+    <a class="sp" href="https://github.com/tcaret2jp/shimau" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

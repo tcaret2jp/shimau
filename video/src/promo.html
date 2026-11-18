@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>shimau 紹介ムービー</title>
+<!-- SNS 用の紹介ムービー（render.mjs で mp4 にする）。
+     1280x720 で開くと 16:9、720x1280 で開くと 9:16 のレイアウトになる -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=block" rel="stylesheet">
+<style>
+:root{--ink:#1d1d1f;--ink2:#6e6e73;--soft:#f5f5f7;--line:#e2e2e7;--accent:#f0532b;--accent-soft:#fdeee9;--ok:#2fb350;--drive:#1f9d55;--dropbox:#2f6fe4;--ssd:#7a7a82;--warn:#e8930c}
+*{box-sizing:border-box}
+html,body{margin:0;width:100vw;height:100vh;overflow:hidden;background:#fff;color:var(--ink);font-family:"Noto Sans JP",sans-serif;-webkit-font-smoothing:antialiased}
+svg{display:block}
+.scene{position:absolute;inset:0;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;text-align:center}
+.cap{font-size:46px;font-weight:900;line-height:1.35;letter-spacing:.01em}
+.cap .a{color:var(--accent)}
+.sub{font-size:24px;color:var(--ink2);font-weight:500;margin-top:-22px}
+
+/* ウィンドウ */
+.win{background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(0,0,0,.07),0 24px 60px rgba(0,0,0,.13);overflow:hidden;text-align:left}
+.bar{height:40px;background:#f6f6f6;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;gap:8px;padding:0 14px;position:relative}
+.bar i{width:12px;height:12px;border-radius:50%;background:#ff5f57}
+.bar i:nth-child(2){background:#febc2e}.bar i:nth-child(3){background:#28c840}
+.bar .ttl{margin-left:12px;font-size:14px;font-weight:700;color:#55555a}
+
+/* 1. 散らかったダウンロード */
+#mess{width:640px;height:330px}
+#mess .grid{position:relative;height:290px}
+.file{position:absolute;width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--ink2);opacity:0}
+.file .doc{width:46px;height:56px;border-radius:6px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.12),0 3px 8px rgba(0,0,0,.08);position:relative;overflow:hidden}
+.file .doc::after{content:attr(data-ext);position:absolute;left:0;right:0;bottom:0;height:17px;font-size:9px;font-weight:900;color:#fff;display:grid;place-items:center;background:var(--c,#8e8e93)}
+.file span{white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+
+/* 2. ロゴ */
+#s2{background:var(--accent);color:#fff;gap:26px}
+.logo{width:128px;height:128px;border-radius:32px;background:#fff;display:grid;place-items:center;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.logo svg{width:72px;height:72px}
+.word{font-size:88px;font-weight:900;letter-spacing:.02em;line-height:1}
+.tag{font-size:34px;font-weight:700}
+
+/* 3. デモ */
+#demo{display:flex;gap:56px;align-items:center}
+#browser{width:500px;height:300px}
+#browser .addr{margin-left:16px;flex:1;height:26px;border-radius:8px;background:#e9e9eb;position:relative}
+#browser .addr span{position:absolute;inset:0;display:flex;align-items:center;gap:6px;padding:0 12px;font-size:14px;color:#3a3a3f;font-weight:500;opacity:0}
+#browser .addr span b{width:16px;height:16px;border-radius:4px;color:#fff;font-size:10px;display:grid;place-items:center}
+.page{padding:26px 30px;position:relative;height:260px}
+.ln{height:12px;border-radius:6px;background:#ececf0;margin-bottom:14px}
+.dlbtn{position:absolute;left:30px;bottom:34px;display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;font-size:16px;font-weight:700;border-radius:10px;padding:10px 18px}
+.dlbtn svg{width:18px;height:18px}
+#dests{display:flex;flex-direction:column;gap:18px}
+.dest{display:flex;align-items:center;gap:16px;background:#fff;border-radius:16px;padding:16px 22px 16px 16px;box-shadow:0 0 0 1px rgba(0,0,0,.07),0 10px 26px rgba(0,0,0,.08);width:330px;text-align:left;position:relative}
+.dest .ic{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;flex:none}
+.dest .ic svg{width:30px;height:30px}
+.dest b{font-size:21px;display:block}
+.dest small{font-size:15px;color:var(--ink2)}
+.dest .n{position:absolute;right:16px;top:50%;margin-top:-15px;width:30px;height:30px;border-radius:50%;background:var(--ok);display:grid;place-items:center;opacity:0}
+.dest .n svg{width:16px;height:16px}
+.fly{position:absolute;left:0;top:0;display:flex;align-items:center;gap:8px;background:#fff;border-radius:10px;padding:8px 14px 8px 8px;font-size:15px;font-weight:500;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 12px 26px rgba(0,0,0,.16);opacity:0;z-index:5;white-space:nowrap}
+.fly .doc{width:24px;height:30px;border-radius:4px;background:var(--c);display:grid;place-items:center;color:#fff;font-size:8px;font-weight:900}
+#toast{position:absolute;display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:14px 20px 14px 14px;box-shadow:0 0 0 1px rgba(0,0,0,.07),0 16px 36px rgba(0,0,0,.15);text-align:left;opacity:0;width:max-content}
+#toast .lg{width:36px;height:36px;border-radius:10px;background:var(--accent);display:grid;place-items:center}
+#toast .lg svg{width:22px;height:22px}
+#toast b{font-size:16px;display:block}
+#toast small{font-size:14px;color:var(--ink2)}
+#toast .t{position:relative;height:44px;width:300px}
+#toast .t div{position:absolute;inset:0;opacity:0}
+
+/* 4. 特長 */
+#feats{display:flex;gap:26px}
+.feat{width:330px;background:var(--soft);border-radius:22px;padding:30px 28px;text-align:left;opacity:0}
+.feat .fi{width:58px;height:58px;border-radius:16px;background:#fff;display:grid;place-items:center;margin-bottom:18px;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.feat .fi svg{width:30px;height:30px}
+.feat b{font-size:25px;line-height:1.4;display:block}
+.feat p{margin:10px 0 0;font-size:17px;line-height:1.6;color:var(--ink2)}
+
+/* 5. おわり */
+#s5{gap:28px}
+#s5 .logo{background:var(--accent);box-shadow:0 18px 40px rgba(240,83,43,.3)}
+#s5 .word{font-size:76px}
+.meta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.meta span{background:var(--soft);border-radius:999px;padding:10px 22px;font-size:21px;font-weight:700}
+.url{display:inline-flex;align-items:center;gap:12px;background:var(--ink);color:#fff;border-radius:999px;padding:16px 32px;font-size:28px;font-weight:700}
+.url svg{width:26px;height:26px}
+
+/* ===== 9:16 ===== */
+@media (orientation:portrait){
+  .scene{gap:52px;padding:0 40px 170px}
+  .cap{font-size:54px}
+  .sub{font-size:27px}
+  #mess{width:620px;height:560px}
+  #mess .grid{height:520px}
+  .logo{width:150px;height:150px;border-radius:38px}.logo svg{width:84px;height:84px}
+  .word{font-size:104px}
+  .tag{font-size:38px}
+  #demo{flex-direction:column;gap:32px}
+  #browser{width:600px;height:300px}
+  #dests{flex-direction:row;gap:16px}
+  .dest{flex-direction:column;width:196px;padding:22px 12px;text-align:center;gap:10px}
+  .dest .ic{width:64px;height:64px}
+  .dest b{font-size:21px}
+  .dest .n{right:12px;top:12px;margin:0}
+  #feats{flex-direction:column;gap:22px}
+  .feat{width:620px;display:flex;gap:22px;align-items:flex-start;padding:28px}
+  .feat .fi{margin:0;flex:none}
+  .feat b{font-size:28px}
+  .feat p{font-size:19px}
+  #s5 .word{font-size:92px}
+  .meta{flex-direction:column;align-items:center}
+  .meta span{font-size:24px}
+  .url{font-size:32px}
+}
+</style>
+</head>
+<body>
+
+<!-- 1. 散らかったダウンロード -->
+<section class="scene" id="s1">
+  <div class="cap" id="c1">ダウンロード、<br>散らかっていませんか？</div>
+  <div class="win" id="mess"><div class="bar"><i></i><i></i><i></i><span class="ttl">ダウンロード</span></div><div class="grid" id="grid"></div></div>
+</section>
+
+<!-- 1b. 手で移す -->
+<section class="scene" id="s1b">
+  <div class="cap">あとで<span class="a">1 つずつ</span>移すの、<br>地味に面倒ですよね。</div>
+</section>
+
+<!-- 2. ロゴ -->
+<section class="scene" id="s2">
+  <div class="logo" id="s2logo"><svg viewBox="0 0 24 24" fill="none" stroke="#f0532b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+  <div class="word" id="s2w">shimau</div>
+  <div class="tag" id="s2t">ダウンロードを、あるべき場所へ。</div>
+</section>
+
+<!-- 3. デモ -->
+<section class="scene" id="s3">
+  <div class="cap" id="c3">サイトごとに、<br class="pbr">保存先を決めておくだけ</div>
+  <div id="demo">
+    <div class="win" id="browser">
+      <div class="bar"><i></i><i></i><i></i>
+        <div class="addr">
+          <span id="d0"><b style="background:#1f9d55">D</b>drive.google.com</span>
+          <span id="d1"><b style="background:#e8517a">F</b>freee.co.jp</span>
+          <span id="d2"><b style="background:#8a63d2">Y</b>youtube-studio.example</span>
+        </div>
+      </div>
+      <div class="page"><div class="ln" style="width:70%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:56%"></div>
+        <div class="dlbtn" id="dlbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>ダウンロード</div>
+      </div>
+    </div>
+    <div id="dests">
+      <div class="dest" id="t0"><div class="ic" style="background:#e3f4ea"><svg viewBox="0 0 24 24" fill="none" stroke="#1f9d55" stroke-width="2" stroke-linejoin="round"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></svg></div><div><b>大学資料</b><small>Google ドライブ</small></div><span class="n"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+      <div class="dest" id="t1"><div class="ic" style="background:#e5eefc"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6fe4" stroke-width="2" stroke-linejoin="round"><path d="M7 3l5 3.2-5 3.3L2 6.2zM17 3l5 3.2-5 3.3-5-3.3zM2 12.8l5-3.3 5 3.3-5 3.2zM17 9.5l5 3.3-5 3.2-5-3.2zM7 17.3l5-3.2 5 3.2-5 3.3z"/></svg></div><div><b>経理</b><small>Dropbox</small></div><span class="n"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+      <div class="dest" id="t2"><div class="ic" style="background:#eeeef0"><svg viewBox="0 0 24 24" fill="none" stroke="#5a5a62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 14h.01M11 14h6"/></svg></div><div><b>動画</b><small>外付け SSD</small></div><span class="n"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+    </div>
+  </div>
+  <div class="fly" id="f0" style="--c:#e5483d"><span class="doc">PDF</span>情報管理論_第8回.pdf</div>
+  <div class="fly" id="f1" style="--c:#2fb350"><span class="doc">XLS</span>請求書_2026-11.xlsx</div>
+  <div class="fly" id="f2" style="--c:#8a63d2"><span class="doc">MP4</span>vlog_0412.mp4</div>
+  <div id="toast"><span class="lg"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></span>
+    <div class="t">
+      <div id="n0"><b>大学資料（Drive）に保存しました</b><small>情報管理論_第8回.pdf</small></div>
+      <div id="n1"><b>経理（Dropbox）に保存しました</b><small>請求書_2026-11.xlsx</small></div>
+      <div id="n2"><b>動画（SSD）に保存しました</b><small>vlog_0412.mp4</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 特長 -->
+<section class="scene" id="s4">
+  <div class="cap" id="c4">ほかのサイトは、<br class="pbr">いつもどおり</div>
+  <div id="feats">
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#f0532b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div><div><b>登録したサイトだけ</b><p>それ以外のダウンロードには一切さわりません</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6fe4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a5 5 0 1 1 .9-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8z"/></svg></div><div><b>クラウドや SSD にも</b><p>Google ドライブ・Dropbox・外付け SSD に直接しまえます</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#2fb350" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div><div><b>ファイルは消えない</b><p>保存先が見つからないときは、ダウンロードに残します</p></div></div>
+  </div>
+</section>
+
+<!-- 5. おわり -->
+<section class="scene" id="s5">
+  <div class="logo" id="s5logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6l4-6h6M14 18h6M10 12l4 6"/><path d="M17 3l3 3-3 3M17 15l3 3-3 3"/></svg></div>
+  <div class="word">shimau</div>
+  <div class="meta" id="s5m"><span>Brave の拡張機能</span><span>Mac ・ Windows</span><span>無料</span></div>
+  <div class="url" id="s5u"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span id="url">shimau.vercel.app</span></div>
+</section>
+
+<script>
+const E = 'cubic-bezier(.25,.1,.25,1)', EO = 'cubic-bezier(.2,.8,.2,1)', EIO = 'cubic-bezier(.6,0,.25,1)';
+const $ = (id) => document.getElementById(id);
+const portrait = innerHeight > innerWidth;
+if (!portrait) document.querySelectorAll('.pbr').forEach((b) => b.remove());
+const anim = (el, kf, t, d, easing = E) => el.animate(kf, { delay: t * 1000, duration: d * 1000, fill: 'forwards', easing });
+const fadeIn = (el, t, d = .5, dy = 18) => anim(el, [{ opacity: 0, transform: `translateY(${dy}px)` }, { opacity: 1, transform: 'none' }], t, d, EO);
+const pop = (el, t, d = .5) => anim(el, [{ opacity: 0, transform: 'scale(.8)' }, { opacity: 1, transform: 'none' }], t, d, EO);
+const show = (el, t0, t1, d = .3) => { anim(el, [{ opacity: 0 }, { opacity: 1 }], t0, d); if (t1 != null) anim(el, [{ opacity: 1 }, { opacity: 0 }], t1, d); };
+function scene(id, t0, t1, fin = .4, fout = .35) {
+  const el = $(id);
+  anim(el, [{ opacity: 0 }, { opacity: 1 }], t0, fin);
+  if (t1 != null) anim(el, [{ opacity: 1 }, { opacity: 0 }], t1 - fout, fout);
+}
+
+// 散らかったファイル（毎回同じ並びになるよう、乱数は固定）
+const files = [['PDF', '#e5483d', '情報管理論_第8回.pdf'], ['XLS', '#2fb350', '請求書_2026-11.xlsx'], ['MP4', '#8a63d2', 'vlog_0412.mp4'], ['ZIP', '#8e8e93', 'archive.zip'], ['PNG', '#2f6fe4', 'スクリーンショット.png'], ['PDF', '#e5483d', 'レジュメ_最終版.pdf'], ['DOC', '#2f6fe4', '企画書ドラフト.docx'], ['JPG', '#e8930c', 'IMG_2041.jpg'], ['PDF', '#e5483d', '領収書_11月.pdf'], ['MP4', '#8a63d2', 'lecture_0412.mp4'], ['CSV', '#2fb350', 'export (3).csv'], ['PDF', '#e5483d', 'syllabus.pdf'], ['DMG', '#8e8e93', 'installer.dmg'], ['PNG', '#2f6fe4', 'image (12).png'], ['XLS', '#2fb350', '家計簿.xlsx'], ['PDF', '#e5483d', '請求書 (1).pdf'], ['JPG', '#e8930c', 'IMG_2042.jpg'], ['DOC', '#2f6fe4', 'レポート.docx']];
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+window.__ready = (async () => {
+  await document.fonts.ready;
+  const grid = $('grid');
+  const gw = grid.clientWidth, gh = grid.clientHeight;
+  const cols = portrait ? 5 : 7, rows = Math.ceil(files.length / cols);
+  files.forEach(([ext, c, name], i) => {
+    const f = document.createElement('div');
+    f.className = 'file';
+    f.innerHTML = `<div class="doc" data-ext="${ext}" style="--c:${c}"></div><span>${name}</span>`;
+    const cx = (i % cols + .5) * (gw / cols) + (rnd() - .5) * 34;
+    const cy = (Math.floor(i / cols) + .5) * (gh / rows) + (rnd() - .5) * 26;
+    f.style.left = cx - 38 + 'px';
+    f.style.top = cy - 40 + 'px';
+    grid.appendChild(f);
+    const r = (rnd() - .5) * 26;
+    anim(f, [{ opacity: 0, transform: `scale(.4) rotate(${r * 2}deg)` }, { opacity: 1, transform: `rotate(${r}deg)` }], .6 + i * .11, .35, EO);
+  });
+
+  // ---- 時間割（秒） ----
+  // 1. 散らかり 0–3.6
+  scene('s1', 0, 3.6, .01);
+  fadeIn($('c1'), .1, .6);
+  // 1b. 面倒 3.6–6
+  scene('s1b', 3.6, 6.2);
+  // 2. ロゴ 6.2–9.6
+  scene('s2', 6.2, 9.6, .25);
+  pop($('s2logo'), 6.4, .6);
+  fadeIn($('s2w'), 6.75, .6, 24);
+  fadeIn($('s2t'), 7.2, .6, 16);
+
+  // 3. デモ 9.6–20.6（1 件 3.2 秒 × 3）
+  scene('s3', 9.6, 20.6);
+  fadeIn($('c3'), 9.7, .6);
+  const toast = $('toast');
+  const sr = $('s3').getBoundingClientRect();
+  const btn = $('dlbtn').getBoundingClientRect();
+  // 通知は画面の下（16:9 は右下、9:16 は下中央）
+  toast.style.opacity = 0;
+  const tw = toast.offsetWidth;
+  if (portrait) { toast.style.left = (innerWidth - tw) / 2 + 'px'; toast.style.top = innerHeight - 300 + 'px'; }
+  else { toast.style.left = innerWidth - tw - 40 + 'px'; toast.style.top = innerHeight - 110 + 'px'; }
+  for (let k = 0; k < 3; k++) {
+    const t = 10.6 + k * 3.2;
+    show($('d' + k), t - .3, k < 2 ? t + 2.9 : null, .25);
+    // ボタンを押す
+    anim($('dlbtn'), [{ transform: 'scale(1)' }, { transform: 'scale(.93)' }, { transform: 'scale(1)' }], t + .3, .3);
+    const f = $('f' + k);
+    const fw = f.offsetWidth, fh = f.offsetHeight;
+    const tg = $('t' + k).getBoundingClientRect();
+    const x0 = btn.left + btn.width / 2 - fw / 2, y0 = btn.top - fh - 8;
+    const x1 = tg.left + tg.width / 2 - fw / 2, y1 = tg.top + tg.height / 2 - fh / 2;
+    const mx = (x0 + x1) / 2, my = Math.min(y0, y1) - (portrait ? 0 : 60);
+    anim(f, [
+      { opacity: 0, transform: `translate(${x0}px,${y0 + 20}px) scale(.8)` },
+      { opacity: 1, transform: `translate(${x0}px,${y0}px) scale(1)`, offset: .2 },
+      { opacity: 1, transform: `translate(${x0}px,${y0}px) scale(1)`, offset: .35 },
+      { opacity: 1, transform: `translate(${mx}px,${my}px) scale(.95)`, offset: .7 },
+      { opacity: 0, transform: `translate(${x1}px,${y1}px) scale(.5)` },
+    ], t + .5, 1.5, E);
+    // 届いた保存先が弾む
+    anim($('t' + k), [{ transform: 'scale(1)', boxShadow: '0 0 0 1px rgba(0,0,0,.07),0 10px 26px rgba(0,0,0,.08)' }, { transform: 'scale(1.06)', boxShadow: '0 0 0 3px #f0532b,0 14px 32px rgba(240,83,43,.25)' }, { transform: 'scale(1)', boxShadow: '0 0 0 1px rgba(0,0,0,.07),0 10px 26px rgba(0,0,0,.08)' }], t + 1.9, .7, EO);
+    pop($('t' + k).querySelector('.n'), t + 2.0, .4);
+    show($('n' + k), t + 2.0, k < 2 ? t + 5.2 : null, .2); // 次の通知に切り替わるまで残す
+  }
+  anim(toast, [{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], 12.5, .4, EO);
+
+  // 4. 特長 20.6–26.4
+  scene('s4', 20.6, 26.4);
+  fadeIn($('c4'), 20.7, .6);
+  document.querySelectorAll('.feat').forEach((el, i) => fadeIn(el, 21.3 + i * .45, .55, 26));
+
+  // 5. おわり 26.4–31
+  scene('s5', 26.4, null);
+  pop($('s5logo'), 26.5, .6);
+  fadeIn($('s5m'), 27.1, .5);
+  fadeIn($('s5u'), 27.5, .5);
+  anim($('s5u'), [{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }], 28.6, .6);
+
+  window.__duration = 31;
+})();
+</script>
+</body>
+</html>
