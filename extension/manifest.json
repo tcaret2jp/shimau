@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "shimau",
   "short_name": "shimau",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "登録したサイトのダウンロードだけを、指定したフォルダ（Googleドライブ・Dropbox・外付けSSD 含む）へ自動で振り分けます。",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxXEptVbZIKE6hTmB94fDRyQJbUl9MqasDWHPTJ3cfq99TAW5z85GkOYIfOSAjmDYAqbTiCLXSJcJRQylWjlYxMCD9hweUF3fp3SnABiCHS8LA1OSosDvV2eYhZ8+isZiroQWOAWVoxj4WD5No4svBYOOTi6vi32snMHAkveKsqtC/kupM4LSvtbUDZAk4AzJv3ZvPW1O98Y3eb3oqtLVdVUfcTNCRTv/C4ju8Xoqyucf2cJXNemNmyxIN7owHQuG3JAVHVPejEB40HJPZHDo0Mbi5a2FkABIHRGdXFtl3DVnEf5Jg/96cY/aMPCoHJt7UPjoq7l5ohMeniGsQ+ADjwIDAQAB",
   "permissions": ["downloads", "storage", "notifications", "nativeMessaging", "tabs", "favicon"],
