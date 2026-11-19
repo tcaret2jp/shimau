@@ -385,6 +385,26 @@ func checkPaths(paths []string) map[string]bool {
 	return res
 }
 
+type fileInfo struct {
+	Size  int64 `json:"size"`
+	MTime int64 `json:"mtime"` // ミリ秒
+}
+
+// checkFiles は通常のファイルの大きさと更新時刻（接続待ちのファイルが、ダウンロードしたときのまま残っているか）。
+// ないファイルは nil
+func checkFiles(paths []string) map[string]*fileInfo {
+	res := make(map[string]*fileInfo, len(paths))
+	for _, p := range paths {
+		fi, err := os.Lstat(expandHome(p))
+		if err == nil && fi.Mode().IsRegular() {
+			res[p] = &fileInfo{Size: fi.Size(), MTime: fi.ModTime().UnixMilli()}
+		} else {
+			res[p] = nil
+		}
+	}
+	return res
+}
+
 type volume struct {
 	Name string `json:"name"`
 	Path string `json:"path"`

@@ -86,3 +86,23 @@ a.btn{text-decoration:none}
 
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* お知らせ（接続待ち・アップデート）2026-11-19 */
+:root{--info:#2f6fe4}
+@media (prefers-color-scheme:dark){:root{--info:#5b8ff0}}
+.note{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:var(--r);font-size:12.5px;border:1px solid}
+.note>.i{width:17px;height:17px;flex:none;margin-top:1px}
+.note>.i svg{width:17px;height:17px}
+.note>div{flex:1;min-width:0}
+.note b{display:block;font-size:13px}
+.note .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.note.info{background:color-mix(in srgb,var(--info) 9%,var(--surface));border-color:color-mix(in srgb,var(--info) 28%,var(--border))}
+.note.info>.i{color:var(--info)}
+.note.wait{background:color-mix(in srgb,var(--warn) 10%,var(--surface));border-color:color-mix(in srgb,var(--warn) 32%,var(--border))}
+.note.wait>.i{color:var(--warn)}
+.note.okn{background:color-mix(in srgb,var(--ok) 9%,var(--surface));border-color:color-mix(in srgb,var(--ok) 28%,var(--border))}
+.note.okn>.i{color:var(--ok)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.bar{height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:8px;position:relative}
+.bar i{position:absolute;top:0;bottom:0;width:40%;background:var(--accent);border-radius:999px;animation:barmove 1.4s ease-in-out infinite}
+@keyframes barmove{from{left:-40%}to{left:100%}}

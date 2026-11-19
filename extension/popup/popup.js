@@ -2,9 +2,10 @@ import { hostOf, siteDomain, findRule } from '../lib/domain.js';
 import { load, updateRules, newId, currentOs } from '../lib/store.js';
 import { ping, call } from '../lib/native.js';
 import { svg, esc, chip, fav, paintIcons, relTime, destKind } from '../ui/parts.js';
+import { getUpdate, availableVersion, requestUpdate } from '../lib/update.js';
 
 const $ = (id) => document.getElementById(id);
-let S, os, host, picking = false;
+let S, os, host, picking = false, U = {}, updating = false;
 
 async function init() {
   paintIcons();
@@ -14,6 +15,9 @@ async function init() {
   host = hostOf(tab?.url);
   renderSite();
   renderRecent();
+  renderWaiting();
+  [U, { updating = false }] = await Promise.all([getUpdate(), chrome.storage.session.get('updating')]);
+  renderUpdate();
 }
 
 // 設定画面など別の場所での変更を反映する
@@ -22,9 +26,62 @@ chrome.storage.onChanged.addListener((c, area) => {
   if (c.rules) S.rules = c.rules.newValue || [];
   if (c.dests) S.dests = c.dests.newValue || [];
   if (c.history) S.history = c.history.newValue || [];
+  if (c.waiting) S.waiting = c.waiting.newValue || [];
+  if (c.update) U = c.update.newValue || {};
   if (c.rules || c.dests) renderSite();
   if (c.history || c.dests) renderRecent();
+  if (c.waiting) renderWaiting();
+  if (c.update) renderUpdate();
 });
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area === 'session' && c.updating) {
+    updating = !!c.updating.newValue;
+    renderUpdate();
+  }
+});
+
+// 接続待ちのファイルがあるときだけ出す
+function renderWaiting() {
+  const w = S.waiting;
+  if (!w.length) {
+    $('wnote').innerHTML = '';
+    return;
+  }
+  const names = [...new Set(w.map((x) => x.destName))].map((n) => `「${esc(n)}」`).join('・');
+  $('wnote').innerHTML = `<div class="note wait"><span class="i">${svg('clock')}</span>
+    <div><b>接続待ち ${w.length} 件</b>${names}がつながったら自動で移動します。それまではダウンロードフォルダにあります。</div></div>`;
+}
+
+// 新しい版のお知らせ・更新中・更新しました（1 日以内）
+function renderUpdate() {
+  const el = $('unote');
+  const v = availableVersion(U);
+  const recent = U.done && Date.now() - U.done.time < 24 * 60 * 60 * 1000 && U.done.ext === 'updated';
+  if (updating) {
+    el.innerHTML = `<div class="note info"><span class="i">${svg('refresh')}</span>
+      <div><b>${v ? `v${esc(v)} に` : ''}更新しています…</b>終わると拡張機能が自動で読み込み直されます。<div class="bar"><i></i></div></div></div>`;
+  } else if (v) {
+    el.innerHTML = `<div class="note info"><span class="i">${svg('spark')}</span>
+      <div><b>新しい版があります（v${esc(v)}）</b>ヘルパーと拡張機能をまとめて更新します。
+      <div class="acts"><button class="btn primary sm" id="u-apply">更新する</button>${
+        U.latest?.url ? '<button class="btn ghost sm" id="u-notes">変更点</button>' : ''
+      }</div></div></div>`;
+    $('u-apply').onclick = () => {
+      updating = true;
+      renderUpdate();
+      requestUpdate('apply').catch(() => {});
+    };
+    if ($('u-notes')) $('u-notes').onclick = () => chrome.tabs.create({ url: U.latest.url });
+  } else if (recent) {
+    el.innerHTML = `<div class="note okn"><span class="i">${svg('check')}</span>
+      <div><b>v${esc(U.done.version)} に更新しました</b>${
+        U.done.url ? '<button class="btn text" style="padding:2px 0" id="u-notes">変更点を見る →</button>' : ''
+      }</div></div>`;
+    if ($('u-notes')) $('u-notes').onclick = () => chrome.tabs.create({ url: U.done.url });
+  } else {
+    el.innerHTML = '';
+  }
+}
 
 function renderHelper(h) {
   $('hdot').className = 'dot ' + (h.connected ? 'ok' : 'ng');
@@ -114,14 +171,18 @@ function renderRecent() {
   }
   $('recent').innerHTML = items
     .map((h, i) => {
+      const wait = h.status === 'wait';
       const fail = h.status !== 'ok';
       const d = S.dests.find((x) => x.id === h.destId);
       const k = fail ? 'warn' : destKind(d, os);
+      const meta = wait
+        ? `接続待ち：${esc(h.destName)}につながったら移動`
+        : fail
+          ? esc(h.reason) + (/ダウンロードフォルダ/.test(h.reason || '') ? '' : '（ダウンロードフォルダに残しました）')
+          : esc(h.destName) + (h.movedLater ? '・つながったので移動しました' : '');
       return `<button data-i="${i}" title="フォルダを開く">
-        <span class="ic ${k}">${svg(fail ? 'alert' : k)}</span>
-        <span class="t"><div class="fn">${esc(h.renamed || h.filename)}</div><div class="meta">${
-          fail ? esc(h.reason) + '（ダウンロードフォルダに残しました）' : esc(h.destName)
-        }</div></span>
+        <span class="ic ${k}">${svg(wait ? 'clock' : fail ? 'alert' : k)}</span>
+        <span class="t"><div class="fn">${esc(h.renamed || h.filename)}</div><div class="meta${wait ? ' w' : ''}">${meta}</div></span>
         <span class="when">${relTime(h.time)}</span></button>`;
     })
     .join('');

@@ -111,7 +111,12 @@ func (in *installer) installedVersion() string {
 	if _, err := os.Stat(in.exe()); err != nil {
 		return ""
 	}
-	out, err := hidden(exec.Command(in.exe(), "--version")).Output()
+	return exeVersion(in.exe())
+}
+
+// exeVersion はヘルパーを --version で起動して版を返す。起動できなければ "?"
+func exeVersion(exe string) string {
+	out, err := hidden(exec.Command(exe, "--version")).Output()
 	if err != nil {
 		return "?" // 壊れている：入れ直す
 	}

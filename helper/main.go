@@ -2,7 +2,7 @@
 //
 // Native Messaging（標準入出力・4バイト長＋JSON）でコマンドを受け取り、
 // ダウンロードフォルダ内のファイルを登録済みの保存先へ移動する。
-// Brave が必要なときだけ起動し、常駐もネット通信もしない。
+// Brave が必要なときだけ起動し、常駐はしない。ネット通信は更新の確認とダウンロード（GitHub）だけ（update.go）。
 // ダブルクリックで開くと、自分を決まった場所へコピーして Brave に登録する（install.go）。
 package main
 
@@ -17,7 +17,7 @@ import (
 	"runtime"
 )
 
-const version = "0.2.0"
+const version = "0.3.0"
 
 // 受け取るメッセージの上限（Chrome → ホストは最大 64MiB だが、ここでは十分小さくてよい）
 const maxMessage = 1 << 20
@@ -30,6 +30,8 @@ type request struct {
 	Path     string   `json:"path"`
 	Reveal   bool     `json:"reveal"`
 	StartDir string   `json:"startDir"`
+	// applyUpdate：今の拡張機能の版
+	ExtVersion string `json:"extVersion"`
 }
 
 // codeError はエラーコード付きのエラー（拡張側で日本語に変換する）
@@ -56,6 +58,7 @@ func main() {
 		runInstaller()
 		return
 	}
+	cleanupOldHelper()
 	a, err := newApp()
 	if err != nil {
 		log.Fatal(err)
@@ -105,6 +108,12 @@ func (a *app) handle(req request) map[string]any {
 		out = map[string]any{"path": p}
 	case "checkPaths":
 		out = map[string]any{"result": checkPaths(req.Paths)}
+	case "checkFiles":
+		out = map[string]any{"result": checkFiles(req.Paths)}
+	case "checkUpdate":
+		out, err = a.checkUpdate()
+	case "applyUpdate":
+		out, err = a.applyUpdate(req.ExtVersion)
 	case "listVolumes":
 		out = map[string]any{"volumes": listVolumes()}
 	case "pickFolder":
@@ -120,6 +129,9 @@ func (a *app) handle(req request) map[string]any {
 	if err != nil {
 		log.Printf("%s: %v", req.Cmd, err)
 		return errorResponse(err)
+	}
+	if out == nil {
+		out = map[string]any{}
 	}
 	out["ok"] = true
 	return out

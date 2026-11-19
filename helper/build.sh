@@ -4,6 +4,13 @@
 #   helper/dist/shimau-helper-mac.zip     中身は「shimau ヘルパー.app」（ダブルクリックでインストール）
 #                                         署名できなかったときは shimau-helper-mac-unsigned.zip
 #   helper/dist/shimau-helper-setup.exe   ダブルクリックでインストール
+#   アップデート用（2026-11-19 追加。ヘルパーが GitHub の最新 Release から取ってくる）
+#   helper/dist/shimau-extension.zip            拡張機能のファイル一式（manifest.json が一番上）
+#   helper/dist/shimau-helper-darwin            Mac 用ヘルパー本体（ユニバーサル・署名済み）
+#   helper/dist/shimau-helper-windows-amd64.exe Windows 用ヘルパー本体
+#   helper/dist/latest.json, latest.json.sig    版・変更点・各ファイルの SHA-256 と、その署名（Ed25519）
+#   変更点は release-notes.txt（1 行 1 項目）。署名の鍵は ~/.config/shimau-release/ed25519.key（SHIMAU_RELEASE_KEY で変更可）
+#   Releases には上の全部をアップロードする（タグは v＋版。latest.json は「最新」の Release にあること）
 #
 # Mac 用アプリは署名（ad-hoc）しないと、Mac で「壊れているため開けません」になる。
 # rcodesign（https://github.com/indygreg/apple-platform-rs）があれば Pi 上で署名する。
@@ -12,6 +19,9 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 VERSION=$(sed -n 's/^const version = "\(.*\)"/\1/p' main.go)
+EXTVER=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' ../extension/manifest.json)
+# ヘルパーと拡張機能は同じ版で出す（アップデートは 1 つの版で両方をそろえる）
+[ "$VERSION" = "$EXTVER" ] || { echo "ヘルパー（$VERSION）と拡張機能（$EXTVER）の版が違います" >&2; exit 1; }
 OUT=dist
 APP="$OUT/mac/shimau ヘルパー.app"
 rm -rf "$OUT" setup_payload && mkdir -p "$OUT/mac" "$OUT/tmp" setup_payload
@@ -40,6 +50,7 @@ if [ -n "$RCS" ]; then
   done
   echo "signed (ad-hoc) $APP"
   MACZIP=shimau-helper-mac.zip
+  cp "$APP/Contents/MacOS/shimau-helper" "$OUT/shimau-helper-darwin" # アップデート用
 else
   MACZIP=shimau-helper-mac-unsigned.zip
   echo "注意: rcodesign がないため Mac 用アプリは未署名です（$MACZIP）。Mac で helper/sign-mac.sh を実行して shimau-helper-mac.zip を作ってください。" >&2
@@ -51,6 +62,22 @@ fi
 # セットアップ版はウィンドウなし（-H windowsgui）で、本体を中に埋め込む。
 build windows amd64 setup_payload/shimau-helper.exe
 LDX="-H windowsgui" build windows amd64 "$OUT/shimau-helper-setup.exe" -tags setup
+cp setup_payload/shimau-helper.exe "$OUT/shimau-helper-windows-amd64.exe" # アップデート用
+
+# ---- 拡張機能（アップデート用）----
+(cd ../extension && zip -qrX "../helper/$OUT/shimau-extension.zip" . -x '*.DS_Store')
+echo "built $OUT/shimau-extension.zip"
+
+# ---- latest.json と署名 ----
+KEY=${SHIMAU_RELEASE_KEY:-$HOME/.config/shimau-release/ed25519.key}
+if [ -f "$KEY" ]; then
+  go run ./tools/signrelease release "$KEY" "$OUT" "$VERSION" release-notes.txt
+  # 鍵とヘルパーに埋め込んだ公開鍵が合っているか
+  PUB=$(go run ./tools/signrelease pub "$KEY")
+  grep -q "releasePubKey = \"$PUB\"" update.go || { echo "署名の鍵が update.go の公開鍵と一致しません" >&2; exit 1; }
+else
+  echo "注意: 署名の鍵（$KEY）がないため latest.json を作っていません。アップデートは配信できません" >&2
+fi
 
 rm -rf "$OUT/tmp"
-ls -la "$OUT"/*.zip "$OUT"/*.exe
+ls -la "$OUT"/*.zip "$OUT"/*.exe "$OUT"/shimau-helper-darwin "$OUT"/latest.json* 2>/dev/null || true

@@ -13,9 +13,9 @@
     <div class="brand"><div class="logo" data-icon="route"></div><b>shimau</b></div>
     <a class="nav" href="#rules"><span data-icon="list"></span>ルール<span class="badge" id="n-rules"></span></a>
     <a class="nav" href="#dests"><span data-icon="folder"></span>保存先<span class="badge" id="n-dests"></span></a>
-    <a class="nav" href="#history"><span data-icon="clock"></span>履歴</a>
+    <a class="nav" href="#history"><span data-icon="clock"></span>履歴<span class="badge w" id="n-wait"></span></a>
     <a class="nav" href="#backup"><span data-icon="box"></span>バックアップ</a>
-    <a class="nav" href="#helper"><span data-icon="plug"></span>ヘルパー</a>
+    <a class="nav" href="#helper"><span data-icon="plug"></span>ヘルパー<span class="badge w" id="n-update"></span></a>
     <div class="foot"><span class="dot" data-hdot></span><span data-htext>確認中…</span></div>
   </nav>
 
@@ -49,7 +49,7 @@
       <div class="head">
         <div><h1>履歴</h1><p class="lead">直近 200 件の振り分け結果です。行をクリックするとフォルダを開きます。</p></div>
         <div class="actions">
-          <div class="seg" id="hfilter"><button class="on" data-f="all">すべて</button><button data-f="fail">失敗のみ</button></div>
+          <div class="seg" id="hfilter"><button class="on" data-f="all">すべて</button><button data-f="wait">接続待ち</button><button data-f="fail">失敗のみ</button></div>
           <button class="btn ghost" id="hclear"><span data-icon="trash"></span>消去</button>
         </div>
       </div>
@@ -68,12 +68,20 @@
     </section>
 
     <section class="view" data-v="helper">
-      <h1>ヘルパー</h1><p class="lead">ファイルを保存先へ移動する小さなアプリです。Brave が必要なときだけ起動し、ネット通信はしません。</p>
+      <h1>ヘルパー</h1><p class="lead">ファイルを保存先へ移動する小さなアプリです。Brave が必要なときだけ起動します。ネット通信は更新の確認とダウンロード（GitHub）のときだけです。</p>
       <div class="card panel" style="margin-bottom:12px">
         <div class="kv">
           <div>状態</div><div class="inline"><span class="dot" data-hdot></span><span data-htext>確認中…</span></div>
           <div>バージョン</div><div id="hver">—</div>
           <div>拡張機能 ID</div><div><code id="extid"></code></div>
+        </div>
+      </div>
+      <div class="card panel" style="margin-bottom:12px" id="upanel">
+        <h2>アップデート</h2>
+        <div id="ustate"></div>
+        <div class="setrow">
+          <div class="t"><div>自動で更新する</div><div>新しい版が見つかったら、確認なしで更新します。終わったら通知でお知らせします。ファイルの移動中は待ってから更新します。</div></div>
+          <button class="toggle" role="switch" aria-checked="false" aria-label="自動で更新する" id="uauto"></button>
         </div>
       </div>
       <div class="card panel"><h2>インストール手順</h2><p class="hint" style="margin:-4px 0 10px">削除するときは、同じファイルをもう一度開いて「削除する」を選びます。</p>

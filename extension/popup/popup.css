@@ -35,3 +35,5 @@ body{width:360px;background:var(--bg)}
 .recent .when{font-size:11.5px;color:var(--text-3);flex:none}
 .recent .none{padding:14px 10px;font-size:12.5px;color:var(--text-3);text-align:center}
 .pop-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 12px}
+#unote:empty,#wnote:empty{display:none}
+.recent .meta.w{color:var(--warn)}

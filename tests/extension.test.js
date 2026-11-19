@@ -123,3 +123,51 @@ test('バックアップ：取り込み（OS 別パスを消さない・上書�
   assert.equal(x.id, 'a'); // 既存の id は保つ
   assert.equal(cur.dests[0].paths.win, ''); // 元のデータは変更しない
 });
+
+// ---- 接続待ち・アップデート（2026-11-19） ----
+import { planRetry, movedMessage, sameFile, WAIT_MS } from '../extension/lib/waiting.js';
+import { cmpVersion, needsUpdate } from '../extension/lib/update.js';
+
+test('planRetry：期限切れ・保存先なし・保存先ごとに分ける', () => {
+  const now = 1_000_000_000_000;
+  const dests = [
+    { id: 'ssd', paths: { mac: '/Volumes/T7/動画', win: 'E:\\動画' } },
+    { id: 'nas', paths: { mac: '/Volumes/NAS' } },
+  ];
+  const w = (historyId, destId, ago) => ({ historyId, destId, src: `/dl/${historyId}`, since: now - ago });
+  const waiting = [w('b', 'ssd', 1000), w('a', 'ssd', 5000), w('old', 'ssd', WAIT_MS), w('gone', 'deleted', 10), w('nas', 'nas', 10)];
+  const mac = planRetry(waiting, dests, 'mac', now);
+  assert.deepEqual(mac.expired.map((x) => x.historyId), ['old']);
+  assert.deepEqual(mac.orphan.map((x) => x.historyId), ['gone']);
+  assert.deepEqual([...mac.byDir.keys()], ['/Volumes/T7/動画', '/Volumes/NAS']);
+  assert.deepEqual(mac.byDir.get('/Volumes/T7/動画').map((x) => x.historyId), ['a', 'b']); // 古い順
+  // Windows では NAS のパスがないので待つのをやめる
+  const win = planRetry(waiting, dests, 'win', now);
+  assert.deepEqual(win.orphan.map((x) => x.historyId).sort(), ['gone', 'nas']);
+  assert.deepEqual([...win.byDir.keys()], ['E:\\動画']);
+});
+
+test('movedMessage', () => {
+  assert.equal(movedMessage(['a.mp4']), 'a.mp4');
+  assert.equal(movedMessage(['a.mp4', 'b.wav', 'c.mov']), 'a.mp4 ほか 2 件');
+});
+
+test('cmpVersion / needsUpdate', () => {
+  assert.ok(cmpVersion('0.10.0', '0.9.9') > 0);
+  assert.ok(cmpVersion('0.3.0', '0.3.1') < 0);
+  assert.equal(cmpVersion('1.0', '1.0.0'), 0);
+  assert.equal(needsUpdate('0.3.1', '0.3.0', '0.3.1'), true); // 拡張機能だけ古い
+  assert.equal(needsUpdate('0.3.1', '0.3.1', '0.3.0'), true); // ヘルパーだけ古い
+  assert.equal(needsUpdate('0.3.1', '0.3.1', '0.3.1'), false);
+  assert.equal(needsUpdate('0.3.0', '0.3.1', undefined), false); // 手元のほうが新しい
+  assert.equal(needsUpdate(undefined, '0.3.0', '0.3.0'), false);
+});
+
+test('sameFile：同じ名前の別のファイルを取り違えない', () => {
+  const w = { size: 100, endTime: 1_000_000 };
+  assert.equal(sameFile(w, { size: 100, mtime: 999_000 }), 'same');
+  assert.equal(sameFile(w, null), 'gone');
+  assert.equal(sameFile(w, { size: 101, mtime: 999_000 }), 'replaced');
+  assert.equal(sameFile(w, { size: 100, mtime: 1_000_000 + 10 * 60 * 1000 }), 'replaced'); // あとからダウンロードし直したもの
+  assert.equal(sameFile({}, { size: 5, mtime: 9 }), 'same'); // 情報がない古い記録
+});

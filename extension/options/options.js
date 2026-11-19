@@ -3,11 +3,14 @@ import { load, updateRules, updateDests, clearHistory, newId, currentOs } from '
 import { call, session } from '../lib/native.js';
 import { buildExport, parseImport, previewMerge, mergeImport } from '../lib/backup.js';
 import { detectKind, KIND_LABEL } from '../lib/kinds.js';
-import { svg, esc, chip, fav, paintIcons, fmtTime, destKind, isOn, setToggle } from '../ui/parts.js';
+import { svg, esc, chip, fav, paintIcons, fmtTime, relTime, destKind, isOn, setToggle } from '../ui/parts.js';
+import { WAIT_TEXT } from '../lib/waiting.js';
+import { getUpdate, patchUpdate, availableVersion, requestUpdate, extVersion } from '../lib/update.js';
 
 const $ = (id) => document.getElementById(id);
 const OS_NAME = { mac: 'Mac', win: 'Windows' };
 let S, os, other, helper = { connected: false }, access = null, hfilter = 'all';
+let U = {}, updating = false, checking = false; // アップデートの状態
 let modalGen = 0; // 開いているダイアログの世代（閉じた後に届いた結果を捨てるため）
 let accessSeq = 0; // 保存先の確認の世代（古い結果で上書きしないため）
 
@@ -19,6 +22,8 @@ async function init() {
   $('os-name').textContent = OS_NAME[os];
   $('extid').textContent = chrome.runtime.id;
   await reload();
+  [U, { updating = false }] = await Promise.all([getUpdate(), chrome.storage.session.get('updating')]);
+  renderUpdate();
   // はじめての設定の「ルールを作る」から来たら、追加画面を開く
   const newRule = location.hash === '#new-rule';
   if (newRule) history.replaceState(null, '', '#rules');
@@ -53,6 +58,8 @@ function renderAll() {
 function renderBadges() {
   $('n-rules').textContent = S.rules.length || '';
   $('n-dests').textContent = S.dests.length || '';
+  $('n-wait').textContent = S.waiting.length || '';
+  $('n-wait').title = S.waiting.length ? `接続待ち ${S.waiting.length} 件` : '';
 }
 
 // ポップアップなど別の画面での変更を、変わった部分だけ反映する
@@ -61,7 +68,16 @@ chrome.storage.onChanged.addListener((c, area) => {
   if (c.rules) S.rules = c.rules.newValue || [];
   if (c.dests) S.dests = c.dests.newValue || [];
   if (c.history) S.history = c.history.newValue || [];
+  if (c.waiting) S.waiting = c.waiting.newValue || [];
   if (c.lastExport) S.lastExport = c.lastExport.newValue || null;
+  if (c.update) {
+    U = c.update.newValue || {};
+    renderUpdate();
+  }
+  if (c.waiting) {
+    renderBadges();
+    invalidate('dests', 'history');
+  }
   if (c.rules || c.dests) {
     renderBadges();
     invalidate('rules', 'dests', 'backup');
@@ -120,9 +136,87 @@ async function checkHelper() {
   document.querySelectorAll('[data-hdot]').forEach((d) => (d.className = 'dot ' + (helper.connected ? 'ok' : 'ng')));
   document.querySelectorAll('[data-htext]').forEach((d) => (d.textContent = helper.connected ? 'ヘルパー接続中' : 'ヘルパー未接続'));
   $('hbanner').hidden = helper.connected;
-  $('hver').textContent = helper.connected ? `${helper.version}（${helper.os}/${helper.arch}）` : '—';
+  $('hver').textContent = `拡張機能 ${extVersion()} ／ ヘルパー ${helper.connected ? `${helper.version}（${helper.os}/${helper.arch}）` : '—'}`;
   invalidate('dests');
 }
+
+/* ---------- アップデート ---------- */
+chrome.storage.onChanged.addListener((c, area) => {
+  if (area === 'session' && c.updating) {
+    updating = !!c.updating.newValue;
+    renderUpdate();
+  }
+});
+
+function renderUpdate() {
+  const v = availableVersion(U);
+  $('n-update').textContent = v ? '1' : '';
+  $('n-update').title = v ? `新しい版 v${v}` : '';
+  setToggle($('uauto'), U.auto);
+  const last = U.lastCheck ? `最後に確認：${relTime(U.lastCheck)}` : 'まだ確認していません';
+  const checkBtn = `<button class="btn ghost" id="u-check" ${checking ? 'disabled' : ''}>${svg('refresh')}${checking ? '確認しています…' : '更新を確認'}</button>`;
+  const err = U.error && (!U.lastCheck || U.error.time >= U.lastCheck - 1000)
+    ? `<p class="small" style="margin:8px 0 0;color:var(--ng)">${esc(U.error.message)}（${fmtTime(U.error.time)}）</p>`
+    : '';
+  let html;
+  if (updating) {
+    html = `<div style="font-size:13px;font-weight:600">${v ? `v${esc(v)} に` : ''}更新しています…</div>
+      <div class="muted small">ダウンロード → 確認 → 置き換え。終わると拡張機能が自動で読み込み直されます。</div><div class="bar"><i></i></div>`;
+  } else if (v) {
+    const notes = (U.latest.notes || []).map((n) => `<li>${esc(n)}</li>`).join('');
+    html = `<div class="inline" style="font-size:13px"><span class="pill new">v${esc(v)} があります</span>${
+      U.latest.publishedAt ? `<span class="muted small">${esc(U.latest.publishedAt)} 公開</span>` : ''
+    }</div>${notes ? `<ul class="unotes">${notes}</ul>` : ''}
+      <div class="uacts"><button class="btn primary" id="u-apply">${svg('download')}今すぐ更新</button>${
+        U.latest.url ? `<button class="btn ghost" id="u-notes">${svg('open')}GitHub で見る</button>` : ''
+      }</div>${err}`;
+  } else {
+    const done = U.done && U.done.version === extVersion() && Date.now() - U.done.time < 7 * 24 * 60 * 60 * 1000;
+    const note = U.done?.ext && U.done.ext !== 'updated' && U.done.ext !== 'current' ? U.done.ext : null;
+    html = `<div class="inline" style="font-size:13px">${
+      U.latest ? (done ? `<span class="pill ok">v${esc(U.done.version)} に更新しました</span>` : '<span class="pill ok">最新です</span>') : ''
+    }<span class="muted small">${last}</span></div>${
+      note === 'dev' ? '<p class="small muted" style="margin:8px 0 0">拡張機能は開発用のフォルダ（git）から読み込まれているため、拡張機能のファイルは自動で更新しません。</p>' : ''
+    }<div class="uacts">${checkBtn}</div>${err}`;
+  }
+  $('ustate').innerHTML = html;
+}
+
+$('ustate').addEventListener('click', async (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'u-check') {
+    checking = true;
+    renderUpdate();
+    try {
+      const r = await requestUpdate('check');
+      U = r.update || U;
+      toast(availableVersion(U) ? `新しい版 v${availableVersion(U)} があります` : '最新です');
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      checking = false;
+      renderUpdate();
+    }
+  } else if (b.id === 'u-apply') {
+    updating = true;
+    renderUpdate();
+    const r = await requestUpdate('apply').catch((err) => ({ ok: false, message: err.message }));
+    if (r && !r.reloading) {
+      updating = false;
+      renderUpdate();
+      toast(r.ok ? r.note || '更新しました' : r.message);
+    }
+  } else if (b.id === 'u-notes') {
+    chrome.tabs.create({ url: U.latest.url });
+  }
+});
+
+$('uauto').onclick = async () => {
+  U = await patchUpdate({ auto: !U.auto });
+  renderUpdate();
+  toast(U.auto ? '新しい版が出たら自動で更新します' : '新しい版が出たら、お知らせしてから更新します');
+};
 $('reconnect').onclick = async () => {
   await checkHelper();
   toast(helper.connected ? 'ヘルパーに接続しました' : 'ヘルパーに接続できませんでした');
@@ -267,6 +361,8 @@ function renderDests() {
     return;
   }
   const counts = ruleCounts();
+  const waitCount = new Map();
+  for (const w of S.waiting) waitCount.set(w.destId, (waitCount.get(w.destId) || 0) + 1);
   el.innerHTML = S.dests
     .map((d) => {
       const k = destKind(d, os);
@@ -286,7 +382,7 @@ function renderDests() {
       return `<div class="card dest-card" data-id="${esc(d.id)}">
         <div class="ic ${k}">${svg(k)}</div>
         <div class="nm">${esc(d.name)}<small>${KIND_LABEL[k]}・ルール ${used} 件</small></div>
-        <div class="st">${st}<div class="more"><button class="iconbtn" aria-label="${esc(d.name)} を編集" data-edit>${svg('edit')}</button>
+        <div class="st">${st}${waitCount.get(d.id) ? `<span class="wcount">接続待ち ${waitCount.get(d.id)} 件</span>` : ''}<div class="more"><button class="iconbtn" aria-label="${esc(d.name)} を編集" data-edit>${svg('edit')}</button>
           <button class="iconbtn" aria-label="${esc(d.name)} を削除" data-del>${svg('trash')}</button></div></div>
         ${p(os)}${p(other)}</div>`;
     })
@@ -409,10 +505,18 @@ $('hclear').onclick = () => {
 };
 
 function renderHistory() {
-  const list = S.history.filter((h) => hfilter === 'all' || h.status !== 'ok');
+  // 「接続待ち」は接続待ちの一覧から作る（履歴の 200 件からあふれたもの・消去したものも取り消せるように）
+  const list =
+    hfilter === 'wait'
+      ? [...S.waiting]
+          .sort((a, b) => b.since - a.since)
+          .map((w) => ({ id: w.historyId, time: w.since, filename: w.filename, site: w.site, destId: w.destId, destName: w.destName, status: 'wait', path: w.src }))
+      : S.history.filter((h) => hfilter === 'all' || h.status === 'fail');
   $('hclear').disabled = !S.history.length;
   if (!list.length) {
-    $('history').innerHTML = `<div class="card empty"><h3>${hfilter === 'fail' ? '失敗した振り分けはありません' : 'まだ履歴はありません'}</h3>
+    $('history').innerHTML = `<div class="card empty"><h3>${
+      { fail: '失敗した振り分けはありません', wait: '接続待ちのファイルはありません' }[hfilter] || 'まだ履歴はありません'
+    }</h3>
       <p style="margin:0">登録したサイトからダウンロードすると、ここに表示されます。</p></div>`;
     return;
   }
@@ -421,16 +525,39 @@ function renderHistory() {
     <thead><tr><th>ファイル</th><th>サイト</th><th>保存先</th><th>結果</th><th>日時</th></tr></thead><tbody>${list
       .map((h) => {
         const ok = h.status === 'ok';
+        const wait = h.status === 'wait';
         const d = byId.get(h.destId) || { name: h.destName, paths: {} };
-        const note = ok ? (h.renamed ? `同名ファイルがあったため「${h.renamed}」で保存` : '') : h.reason + '（ダウンロードフォルダに残しました）';
-        return `<tr data-path="${esc(h.path)}" title="フォルダを開く"><td class="fn-cell"><div class="fn">${esc(h.filename)}</div>${note ? `<div class="reason">${esc(note)}</div>` : ''}</td>
+        const note = ok
+          ? [h.movedLater ? `保存先がつながったので ${fmtTime(h.movedLater)} に移動しました` : '', h.renamed ? `同名ファイルがあったため「${h.renamed}」で保存` : '']
+              .filter(Boolean)
+              .join('。')
+          : wait
+            ? WAIT_TEXT.waiting
+            : h.reason + (/ダウンロードフォルダ/.test(h.reason || '') ? '' : '（ダウンロードフォルダに残しました）');
+        return `<tr data-path="${esc(h.path)}" title="フォルダを開く"><td class="fn-cell"><div class="fn">${esc(h.filename)}</div>${
+          note ? `<div class="reason${wait ? ' w' : ''}">${esc(note)}</div>` : ''
+        }${wait ? `<button class="linkbtn" data-cancel="${esc(h.id)}">待つのをやめる</button>` : ''}</td>
           <td class="muted">${esc(h.site || '')}</td><td>${chip(d, os)}</td>
-          <td>${ok ? `<span class="res ok">${svg('check')}成功</span>` : `<span class="res ng">${svg('x')}失敗</span>`}</td>
+          <td>${
+            ok
+              ? `<span class="res ok">${svg('check')}成功</span>`
+              : wait
+                ? `<span class="res w">${svg('clock')}接続待ち</span>`
+                : `<span class="res ng">${svg('x')}失敗</span>`
+          }</td>
           <td class="muted small" style="white-space:nowrap">${fmtTime(h.time)}</td></tr>`;
       })
       .join('')}</tbody></table></div>`;
 }
-$('history').addEventListener('click', (e) => {
+$('history').addEventListener('click', async (e) => {
+  const c = e.target.closest('[data-cancel]');
+  if (c) {
+    c.disabled = true;
+    const r = await chrome.runtime.sendMessage({ type: 'waiting:cancel', historyId: c.dataset.cancel }).catch(() => null);
+    if (r?.found) toast(`${r.filename} の接続待ちをやめました（ダウンロードフォルダにあります）`);
+    else toast('このファイルはもう接続待ちではありません');
+    return;
+  }
   const tr = e.target.closest('tr[data-path]');
   if (tr) call('openFolder', { path: tr.dataset.path, reveal: true }).catch((err) => toast('フォルダを開けませんでした：' + err.message));
 });
