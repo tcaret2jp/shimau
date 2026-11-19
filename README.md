@@ -21,11 +21,11 @@ Brave（Mac / Windows）で、登録したドメインのダウンロードだ�
 - はじめての設定画面：拡張機能を初めて入れたときに自動で開き、ヘルパーのダウンロード・インストール用コマンド・接続確認を案内する（モック OK 済み → [docs/mockup-welcome.html](docs/mockup-welcome.html)）
   - ヘルパーがつながると、カルーセルのチュートリアルに切り替わる：「初めて使う」→ しくみの説明 → 保存先を作る → ルールを作る → Brave の「保存場所を確認する」を OFF にする案内 → 完了。「バックアップを読み込む」を選んだ場合はその場で取り込んで完了（チュートリアルの部分のみモック v2 で OK → [docs/mockup-welcome-v2.html](docs/mockup-welcome-v2.html)。ヘルパーのインストール手順は従来のまま）
   - Brave の「ダウンロード前に各ファイルの保存場所を確認する」は拡張機能から無効にできない（API がない）。チュートリアルで OFF にするよう案内する
-- GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.2.1（`shimau-helper-mac.zip`・`shimau-helper-setup.exe`）を公開済み。v0.2.1 は拡張機能だけの更新で、ヘルパーは v0.2.0 と同じもの。**v0.3.0 は未公開**
+- GitHub：https://github.com/tcaret2jp/shimau （Public）。Releases に v0.2.1（`shimau-helper-mac.zip`・`shimau-helper-setup.exe`）を公開済み。v0.2.1 は拡張機能だけの更新で、ヘルパーは v0.2.0 と同じもの。**v0.3.0 を 2026-11-19 に公開**（Latest。アップデート用の 5 ファイルも含めて 7 ファイル）
 
 ## 次にやること
-1. v0.3.0 を Releases に出す：`helper/build.sh` で作った `helper/dist/` の 7 ファイル（下の「リリースの出し方」）。v0.2 のヘルパーは自分で更新できないので、v0.3.0 のヘルパーだけは手で入れ直す（以降は自動）
-2. Mac / Windows 実機で確認（とーや）：下の「実機での確認項目」（7・8 が v0.3.0 の分）
+1. Mac / Windows 実機で確認（とーや）：v0.3.0 を入れ直す（v0.2 のヘルパーは自分で更新できないので、今回だけ手で入れ直す。以降は自動）→ 下の「実機での確認項目」（7・8 が v0.3.0 の分。8 は次の版を出したときに確認）
+2. 署名の秘密鍵（`~/.config/shimau-release/ed25519.key`）を別の安全な場所にも控える（とーや）
 3. 実機で見つかった問題の修正 → 新しい版を Releases に出す（はじめての設定画面のダウンロードボタンは最新の Release を見る）
 
 ## 構成
